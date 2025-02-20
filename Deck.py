@@ -7,5 +7,5 @@ class Deck:
         random.shuffle(self.cards)
 
     def deal(self, num_players=4):
-        """Deal 13 cards to each player."""
+        """deal 13 cards to each player."""
         return [self.cards[i::num_players] for i in range(num_players)]
