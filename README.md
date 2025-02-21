@@ -2,7 +2,7 @@
 
 Here is our senior project! 
 
-#### Group members
+### Group members:
 ###### (ranked by number of stuffed Pokemon in posession)
 
 1. Gabriel Wolf
