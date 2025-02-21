@@ -2,7 +2,7 @@ from Card import Card
 from Deck import Deck
 from Player import Player
 
-class HeartsGame:
+class Game:
     def __init__(self, player_names, max_score):
         self.players = [Player(i,name) for i,name in enumerate(player_names)]
         self.max_score = max_score
@@ -24,7 +24,7 @@ class HeartsGame:
             for card in player.hand:
                 if card.suit == "Clubs" and card.rank == "2":
                     return player
-        return None  # Fallback in case something goes wrong
+        raise ValueError("Nobody has the 2 of clubs.")
 
     def play_card(self, player_index, card):
         """Player attempts to play a card."""

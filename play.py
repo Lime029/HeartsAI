@@ -8,8 +8,13 @@ player2 = Player("Meal")
 player3 = Player("Shraf")
 player4 = Player("Simi")
 
-# Initialize the game
-game = Game([player1, player2, player3, player4])
+# Create the game with four players
+game = Game(["Rachel", "Meal", "Shraf", "Simi"])
 
-# Start the game
-game.start_game()
+# Deal with looping through rounds outside of the Game class
+p1 = game.find_starting_player
+print(game.play_card(p1, game.deck.get_card('2', 'Clubs')))
+
+# Check if the game is over
+if game.is_game_over():
+    print("Game over!")
