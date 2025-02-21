@@ -9,6 +9,7 @@ class Player:
 
     def receive_cards(self, cards):
         self.hand = sorted(cards, key=lambda card: (Card.suits.index(card.suit), Card.ranks.index(card.rank)))
+        print(self.hand)
 
     def play_card(self, card):
         if card in self.hand:
