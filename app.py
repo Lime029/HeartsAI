@@ -33,5 +33,13 @@ def play_card(card):
         center_cards.append(card)
         emit('update_cards', {"player_cards": player_cards, "center_cards": center_cards}, broadcast=True)
 
+@socketio.on('get_new_cards')
+def get_new_cards():
+    """Generates 10 new random cards for the player."""
+    global player_cards
+    player_cards = generate_random_cards(10)
+    emit('update_cards', {"player_cards": player_cards, "center_cards": center_cards}, broadcast=True)
+
+
 if __name__ == '__main__':
     socketio.run(app, debug=True)
