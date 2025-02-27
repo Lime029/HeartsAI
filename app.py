@@ -23,7 +23,7 @@ def send_initial_cards():
 def play_card(card):
     """Move a played card from player cards to the center."""
     global game
-    if card in game.current_player.cards:
+    if card in game.current_player.hand:
         game.play_card(card)
         emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": Game.dict_repr(game.trick)}, broadcast=True)
 
