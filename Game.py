@@ -77,6 +77,7 @@ class Game:
         return False
 
     # Returns a dictionary representation of cards either of a single card or a list
+    @staticmethod
     def dict_repr(obj):
         if isinstance(obj, Card):
             return {"rank": obj.rank, "suit": obj.suit}
