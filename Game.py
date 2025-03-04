@@ -47,6 +47,7 @@ class Game:
         if card.suit == 'Hearts':
             self.hearts_broken = True
 
+        print(f"{self.current_player.name} played {card.rank} of {card.suit}.")
         if len(self.trick) == 4:  # Trick complete
             self.resolve_trick()
         else:
@@ -57,7 +58,7 @@ class Game:
         """Determine who wins the trick and assign points."""
         lead_suit = self.trick[0][1].suit
         trick_cards = [(p, c) for p, c in self.trick if c.suit == lead_suit]
-        winner = max(trick_cards, key=lambda x: Card.ranks.index(x[1].rank))[0]
+        winner = self.players[max(trick_cards, key=lambda x: Card.ranks.index(x[1].rank))[0]]
 
         # Calculate points
         points = sum(1 for _, c in self.trick if c.suit == 'Hearts')
@@ -67,7 +68,7 @@ class Game:
         self.trick = []
         self.current_player = winner
 
-        print(f"{winner.name} won the trick and received {points} points.")
+        print(f"{winner.name} won the trick and received {points} points.\n")
 
     def is_game_over(self):
         """Check if any player has reached the max points."""
