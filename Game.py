@@ -57,7 +57,8 @@ class Game:
         """Determine who wins the trick and assign points."""
         lead_suit = self.trick[0][1].suit
         trick_cards = [(p, c) for p, c in self.trick if c.suit == lead_suit]
-        winner = max(trick_cards, key=lambda x: Card.ranks.index(x[1].rank))[0]
+        winner_index = max(trick_cards, key=lambda x: Card.ranks.index(x[1].rank))[0]
+        winner = self.players[winner_index]
 
         # Calculate points
         points = sum(1 for _, c in self.trick if c.suit == 'Hearts')
