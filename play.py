@@ -4,25 +4,22 @@ import random
 
 # Create the game with four players
 game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
-print(game.play_card(game.deck.get_card('2', 'Clubs')))
 
-while(len(game.current_player.hand) > 0):
-    print(game.current_player.name)
-    print(game.current_player.hand)
-    print(game.trick)
-    success = False
-    while not success:
-        try:
-            print(game.play_card(random.choice(game.current_player.hand)))
-            success = True
-        except Exception as e:
-            pass
-    if len(game.trick) == 0: # End of trick
-        print(game.players[0].name,game.players[0].score)
-        print(game.players[1].name,game.players[1].score)
-        print(game.players[2].name,game.players[2].score)
-        print(game.players[3].name,game.players[3].score)
+random.seed(0)
 
-# Check if the game is over
-if game.is_game_over():
-    print("Game over!")
+while not game.is_game_over():
+    p = game.current_player
+    if len(game.trick) == 0:
+        # player is leading, can play anything except possibly hearts
+        if game.hearts_broken or all(c.suit == "hearts" for c in p.hand):
+            move = random.choice(p.hand)
+        else:
+            move = random.choice([c for c in p.hand if c.suit != "hearts"])
+    else:
+        lead = game.trick[0][1].suit
+        if p.has_any(lead):
+            move = random.choice([c for c in p.hand if c.suit == lead])
+        else:
+            move = random.choice(p.hand)
+
+    print(game.play_card(move))

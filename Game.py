@@ -53,6 +53,22 @@ class Game:
         else:
             self.current_player = self.players[(self.current_player.index + 1) % len(self.players)]
         return f"{old_player} played {card.rank} of {card.suit}."
+    
+    def is_valid_card(self, card) -> bool:
+        if card not in self.current_player.hand:
+            return False
+
+        if len(self.trick) == 0: # Starting trick with this card
+            if card.suit == 'Hearts' and not self.hearts_broken and not self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
+                return False
+            trick_suit = card.suit
+        else:
+            trick_suit = self.trick[0][1].suit
+
+        if card.suit != trick_suit and self.current_player.has_any(trick_suit):
+            return False
+
+        return True
 
     def resolve_trick(self):
         """Determine who wins the trick and assign points."""
@@ -76,12 +92,3 @@ class Game:
             if player.score >= self.max_score:
                 return True
         return False
-
-    # Returns a dictionary representation of cards either of a single card or a list
-    @staticmethod
-    def dict_repr(obj):
-        if isinstance(obj, Card):
-            return {"rank": obj.rank, "suit": obj.suit}
-        if isinstance(obj, list):
-            return [{"rank": card.rank, "suit": card.suit} for card in obj]
-        raise TypeError("Input must be a Card object or a list of Card objects.")
