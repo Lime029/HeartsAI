@@ -2,12 +2,6 @@ from Player import Player
 from Game import Game
 
 
-# Create players
-player1 = Player("Rachel")
-player2 = Player("Meal")
-player3 = Player("Shraf")
-player4 = Player("Simi")
-
 # Create the game with four players
 game = Game(["Rachel", "Meal", "Shraf", "Simi"])
 
