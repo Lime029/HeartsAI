@@ -17,22 +17,28 @@ def index():
 @socketio.on('connect')
 def send_initial_cards():
     """Send player cards and center cards on connection."""
-    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": Game.dict_repr(game.trick)})
+    trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
+    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards})
 
 @socketio.on('play_card')
 def play_card(card):
     """Move a played card from player cards to the center."""
     global game
+    card = game.deck.get_card(card['rank'], card['suit'])
+    print(card)
+    print(game.current_player.hand)
     if card in game.current_player.hand:
         game.play_card(card)
-        emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": Game.dict_repr(game.trick)}, broadcast=True)
+        trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
+        emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
 
 @socketio.on('get_new_cards')
 def get_new_cards():
     """Generates a new game."""
     global game
     game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
-    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": Game.dict_repr(game.trick)}, broadcast=True)
+    trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
+    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
 
 
 if __name__ == '__main__':

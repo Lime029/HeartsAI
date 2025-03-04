@@ -8,7 +8,7 @@ class Game:
         self.max_score = max_score
         self.deck = Deck()
         self.deal_cards()
-        self.trick = []
+        self.trick = [] # Caution: A list of pairs (playerIndex, card)
         self.hearts_broken = False
         self.current_player = self.find_starting_player()
 
@@ -47,11 +47,12 @@ class Game:
         if card.suit == 'Hearts':
             self.hearts_broken = True
 
+        old_player = self.current_player.name
         if len(self.trick) == 4:  # Trick complete
             self.resolve_trick()
         else:
             self.current_player = self.players[(self.current_player.index + 1) % len(self.players)]
-        return f"{self.current_player.name} played {card.rank} of {card.suit}."
+        return f"{old_player} played {card.rank} of {card.suit}."
 
     def resolve_trick(self):
         """Determine who wins the trick and assign points."""
