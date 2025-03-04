@@ -17,22 +17,22 @@ def index():
 @socketio.on('connect')
 def send_initial_cards():
     """Send player cards and center cards on connection."""
-    emit('update_cards', {"player_cards": game.current_player.cards, "center_cards": game.trick})
+    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": Game.dict_repr(game.trick)})
 
 @socketio.on('play_card')
 def play_card(card):
     """Move a played card from player cards to the center."""
     global game
-    if card in game.current_player.cards:
+    if card in game.current_player.hand:
         game.play_card(card)
-        emit('update_cards', {"player_cards": game.current_player.cards, "center_cards": game.trick}, broadcast=True)
+        emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": Game.dict_repr(game.trick)}, broadcast=True)
 
 @socketio.on('get_new_cards')
 def get_new_cards():
-    """Generates 10 new random cards for the player."""
+    """Generates a new game."""
     global game
     game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
-    emit('update_cards', {"player_cards": game.current_player.cards, "center_cards": game.trick}, broadcast=True)
+    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": Game.dict_repr(game.trick)}, broadcast=True)
 
 
 if __name__ == '__main__':

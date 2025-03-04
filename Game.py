@@ -75,3 +75,12 @@ class Game:
             if player.score >= self.max_score:
                 return True
         return False
+
+    # Returns a dictionary representation of cards either of a single card or a list
+    @staticmethod
+    def dict_repr(obj):
+        if isinstance(obj, Card):
+            return {"rank": obj.rank, "suit": obj.suit}
+        if isinstance(obj, list):
+            return [{"rank": card.rank, "suit": card.suit} for card in obj]
+        raise TypeError("Input must be a Card object or a list of Card objects.")
