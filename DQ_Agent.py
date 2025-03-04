@@ -48,11 +48,10 @@ def generate_training_data(model : DQN) -> list:
     for simulated_game in range (5000):
         game = Game(["Agent", "P1", "P2", "P3"])
         cards_seen = np.zeros(shape=(1,52))
-
+        current_trick_cards = []
         # Loop for the entire game
         while len(game.current_player.hand) > 0:
             inital_score = game.players[0].score
-            current_trick_cards = []
             if game.current_player.name == 'Agent':
                 # Note the agent's hand before playing the card
                 hand = np.zeros(shape=(1,52))
@@ -98,6 +97,8 @@ def generate_training_data(model : DQN) -> list:
                 for card in current_trick_cards:
                     index = map.get_index(rank=rand_card.rank, suit=rand_card.suit)
                     current_state[index] = 1
+                # Reset 
+                current_trick_cards = []
 
                 
         
