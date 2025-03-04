@@ -47,13 +47,12 @@ class Game:
         if card.suit == 'Hearts':
             self.hearts_broken = True
 
-        old_player = self.current_player.name
+        print(f"{self.current_player.name} played {card.rank} of {card.suit}.")
         if len(self.trick) == 4:  # Trick complete
             self.resolve_trick()
         else:
             self.current_player = self.players[(self.current_player.index + 1) % len(self.players)]
-        return f"{old_player} played {card.rank} of {card.suit}."
-    
+
     def is_valid_card(self, card) -> bool:
         if card not in self.current_player.hand:
             return False
