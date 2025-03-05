@@ -98,7 +98,9 @@ def generate_training_data(model : DQN) -> list:
                     index = map.get_index(rank=rand_card.rank, suit=rand_card.suit)
                     current_state[index] = 1
                 # Reset 
-                current_trick_cards = []
+                current_trick_cards = [] 
+
+
 
                 
         
