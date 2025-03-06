@@ -96,7 +96,7 @@ def generate_training_data(model : DQN) -> list:
                 # Update the cards seen with all the cards played in the terminated trick
                 for card in current_trick_cards:
                     index = map.get_index(rank=rand_card.rank, suit=rand_card.suit)
-                    current_state[index] = 1
+                    cards_seen[index] = 1
                 # Reset 
                 current_trick_cards = [] 
 
