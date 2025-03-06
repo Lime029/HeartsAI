@@ -6,7 +6,8 @@ class State:
     """A class representing the game state, for MCTS. Normally, this would be an abstract class, but we only have one game."""
 
     def __init__(self, game):
-        self.game = game
+        self.game = deepcopy(game) #maybe don't need to copy
+        self.game.verbose = False
         self.n_players = 4  # assuming 4 players for now
         self.to_move = game.current_player.index
 
@@ -24,7 +25,7 @@ class State:
         unseen = [
             c
             for c in cl.game.deck.cards
-            if c not in obs_hand and c not in cl.game.trick
+            if c not in obs_hand and c not in [card for (_, card) in cl.game.trick]
         ]
         random.shuffle(unseen)
 
@@ -35,10 +36,9 @@ class State:
                 unseen = unseen[sz:]
         return cl
 
-    # TODO: probably rename this to "play card" or something
     def move(self, move):
         self.game.play_card(move)
-        self.to_move = (self.to_move + 1) % 4
+        self.to_move = self.game.current_player.index
 
     def get_moves(self):
         """@return legal moves for the current player"""
@@ -60,6 +60,5 @@ class State:
 
     def get_score(self, player):
         """@return the score from the perspective of the player, normalized between 0 and 1, where 1 is the best, or 0 if the game is not over"""
-        if self.game.is_game_over():
-            return 1 - self.game.score[player] / 13.0
-        return 0
+        #print(f"game score for player is {self.game.score[player]}")
+        return 1 - self.game.players[player].score / 26.0

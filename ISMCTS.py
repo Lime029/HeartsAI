@@ -42,7 +42,8 @@ class ISMCTS:
             """increases visits by 1 and updates wins according to the terminal state"""
             self.visits += 1
             if self.just_moved is not None:
-                self.wins += terminal_state.get_result(self.just_moved)
+                score = terminal_state.get_score(self.just_moved)
+                self.wins += score
 
         # TODO: remove the below
 
@@ -73,12 +74,21 @@ class ISMCTS:
                 s += str(c) + "\n"
             return s
 
-    @staticmethod
-    def run(root_state, iters, verbose=False):
+    def __init__(self, player_idx):
+        self.player_idx = player_idx
+
+    def run(self, root_state, iters, verbose=False):
         root = ISMCTS.Node()
         for _ in range(iters):
+            #print(f"starting iteration {i}")
             n = root
-            s = root_state.randomize_clone(root_state.to_move)
+            s = root_state.randomize_clone(self.player_idx)
+
+            #print("Randomized hands:")
+            #for p in s.game.players:
+            #    print(f"{p.name} {p.hand}")
+            #print("")
+
             while True:
                 # traverse the tree until we find a node that is not fully expanded
                 moves = s.get_moves()
@@ -99,11 +109,14 @@ class ISMCTS:
 
             # simulate playing out the rest of the hand randomly from this point:
             while s.get_moves() != []:
+                #print(f"moves: {s.get_moves()}")
+                #print(f"current player: {s.game.current_player.name}")
                 s.move(random.choice(s.get_moves()))
 
             while n is not None:
                 n.update(s)
                 n = n.parent
+
         if verbose:
             print(root.TreeToString(0))
         else:
