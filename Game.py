@@ -1,9 +1,10 @@
 from Card import Card
 from Deck import Deck
 from Player import Player
+import random
 
 class Game:
-    def __init__(self, player_names, max_score):
+    def __init__(self, player_names, max_score, verbose=True):
         self.players = [Player(i,name) for i,name in enumerate(player_names)]
         self.max_score = max_score
         self.deck = Deck()
@@ -11,6 +12,7 @@ class Game:
         self.trick = [] # Caution: A list of pairs (playerIndex, card)
         self.hearts_broken = False
         self.current_player = self.find_starting_player()
+        self.verbose = verbose
 
     def deal_cards(self):
         """Deal 13 cards to each player."""
@@ -32,7 +34,7 @@ class Game:
             raise ValueError("Invalid move: You don't have that card.")
 
         if len(self.trick) == 0: # Starting trick with this card
-            if card.suit == 'Hearts' and not self.hearts_broken and not self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
+            if card.suit == 'Hearts' and not self.hearts_broken and self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
                 raise ValueError("Invalid move: Hearts have not been broken.")
             trick_suit = card.suit
         else:
@@ -47,7 +49,9 @@ class Game:
         if card.suit == 'Hearts':
             self.hearts_broken = True
 
-        print(f"{self.current_player.name} played {card.rank} of {card.suit}.")
+        if self.verbose:
+            print(f"{self.current_player.name} played {card.rank} of {card.suit}.")
+
         if len(self.trick) == 4:  # Trick complete
             self.resolve_trick()
         else:
@@ -83,7 +87,8 @@ class Game:
         self.trick = []
         self.current_player = winner
 
-        print(f"{winner.name} won the trick and received {points} points.\n")
+        if self.verbose:
+            print(f"{winner.name} won the trick and received {points} points.")
 
     def is_game_over(self):
         """Check if any player has reached the max points."""
@@ -91,6 +96,19 @@ class Game:
             if player.score >= self.max_score:
                 return True
         return False
+
+    def random_legal_move(self):
+        p = self.current_player
+        if len(self.trick) == 0:
+            # player is leading, can play anything except possibly hearts
+            if self.hearts_broken or all(c.suit == "Hearts" for c in p.hand):
+                move = random.choice(p.hand)
+            else:
+                move = random.choice([c for c in p.hand if c.suit != "Hearts"])
+        else:
+            lead = self.trick[0][1].suit
+            move = random.choice(p.playable_cards(lead))
+        return move
 
     # Returns a dictionary representation of cards either of a single card or a list
     @staticmethod
