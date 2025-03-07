@@ -36,7 +36,7 @@
 </head>
 <body>
     <h1>Hearts Game</h1>
-    <h2>Your Cards</h2>
+    <h2><span id="player-name">Your</span>'s Cards</h2>
     <button id="new-cards-btn">Get New Cards</button>
     <button id="mcts-btn">Decide via MCTS</button>
     <div id="player-cards"></div>
@@ -79,6 +79,11 @@
 
             data.player_cards.forEach(card => playerDiv.appendChild(createCardElement(card, true)));
             data.center_cards.forEach(card => centerDiv.appendChild(createCardElement(card, false)));
+        });
+
+        socket.on('update_player', function(data) {
+          let playerName = document.getElementById('player-name');
+          playerName.innerHTML = data.player_name;
         });
     </script>
 </body>

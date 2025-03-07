@@ -21,6 +21,7 @@ def send_initial_cards():
     """Send player cards and center cards on connection."""
     trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
     emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards})
+    emit('update_player', {"player_name": game.current_player.name})
 
 @socketio.on('play_card')
 def play_card(card):
@@ -34,6 +35,7 @@ def play_card(card):
         game.play_card(card)
         trick_cards.append(Game.dict_repr(card))
         emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
+        emit('update_player', {"player_name": game.current_player.name})
 
 @socketio.on('get_new_cards')
 def get_new_cards():
