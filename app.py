@@ -30,8 +30,9 @@ def play_card(card):
     print(card)
     print(game.current_player.hand)
     if card in game.current_player.hand:
-        game.play_card(card)
         trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
+        game.play_card(card)
+        trick_cards.append(Game.dict_repr(card))
         emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
 
 @socketio.on('get_new_cards')
@@ -52,4 +53,4 @@ def run_mcts():
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
