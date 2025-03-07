@@ -40,6 +40,5 @@ def get_new_cards():
     trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
     emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
 
-
 if __name__ == '__main__':
     socketio.run(app, debug=True)
