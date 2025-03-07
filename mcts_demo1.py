@@ -1,6 +1,7 @@
 from Game import Game
 from ISMCTS import ISMCTS
 from State import State
+
 game = Game(["Player 1", "Player 2", "Player 3", "Player 4"], 100)
 
 print("starting hands:")
@@ -17,11 +18,12 @@ while not game.is_game_over() and game.current_player.hand != []:
     if p.index == mcts_idx:
         s = State(game)
         print("running mcts")
-        move = mcts.run(s, 999, verbose=False)
+        move = mcts.run(s, 10, verbose=True)
         print(f"mcts picked {move}")
     else:
         move = game.random_legal_move()
     game.play_card(move)
+    input("Press enter to continue...")
 
 print("hand is over. scores:")
 for p in game.players:

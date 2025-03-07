@@ -9,7 +9,7 @@ class ISMCTS:
             self.move = move  # the move that was just made
             self.parent = parent
             self.children = []
-            self.wins = 0
+            self.wins = 0.0
             self.visits = 0
             self.avails = 1
             self.just_moved = just_moved
