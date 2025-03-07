@@ -4,6 +4,11 @@ from State import State
 
 
 class ISMCTS:
+    """
+    implementation of information set MCTS
+    based on https://ieeexplore.ieee.org/document/6203567 and https://www.aifactory.co.uk/newsletter/2013_01_reduce_burden.htm
+    """
+
     class Node:
         def __init__(self, move=None, parent=None, just_moved=None):
             self.move = move  # the move that was just made
