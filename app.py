@@ -1,25 +1,14 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
-import random
+
+from Player import Player
+from Game import Game
+from Card import Card
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-suits = ["Hearts", "Diamonds", "Clubs", "Spades"]
-ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-
-def generate_random_cards(num=10):
-    deck = [{"rank": rank, "suit": suit} for suit in suits for rank in ranks]
-    return random.sample(deck, num)
-
-player_cards = generate_random_cards(10)  
-center_cards = []  
-
-def print_card_arrays():
-    """Prints the flat, unformatted player hand and center cards."""
-    print("Player Hand:", player_cards)
-    print("Center Cards:", center_cards)
-    print("-" * 50)  # Separator for readability
+game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
 
 @app.route('/')
 def index():
@@ -28,26 +17,28 @@ def index():
 @socketio.on('connect')
 def send_initial_cards():
     """Send player cards and center cards on connection."""
-    emit('update_cards', {"player_cards": player_cards, "center_cards": center_cards})
-    print_card_arrays()
+    trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
+    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards})
 
 @socketio.on('play_card')
 def play_card(card):
     """Move a played card from player cards to the center."""
-    global player_cards, center_cards
-    if card in player_cards:
-        player_cards.remove(card)
-        center_cards.append(card)
-        emit('update_cards', {"player_cards": player_cards, "center_cards": center_cards}, broadcast=True)
-        print_card_arrays()
+    global game
+    card = game.deck.get_card(card['rank'], card['suit'])
+    print(card)
+    print(game.current_player.hand)
+    if card in game.current_player.hand:
+        game.play_card(card)
+        trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
+        emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
 
 @socketio.on('get_new_cards')
 def get_new_cards():
-    """Generates 10 new random cards for the player."""
-    global player_cards
-    player_cards = generate_random_cards(10)
-    emit('update_cards', {"player_cards": player_cards, "center_cards": center_cards}, broadcast=True)
-    print_card_arrays()
+    """Generates a new game."""
+    global game
+    game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
+    trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
+    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
