@@ -4,6 +4,8 @@ from flask_socketio import SocketIO, emit
 from Player import Player
 from Game import Game
 from Card import Card
+from ISMCTS import ISMCTS
+from State import State
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -39,6 +41,15 @@ def get_new_cards():
     game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
     trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
     emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
+
+@socketio.on('run_mcts')
+def run_mcts():
+    global game
+    mcts = ISMCTS(game.current_player.index)
+    s = State(game)
+    move = mcts.run(s, 1000, verbose=False)
+    play_card(Game.dict_repr(move))
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)

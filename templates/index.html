@@ -23,7 +23,7 @@
         .card:hover { transform: scale(1.1); box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4); }
         .rank { position: absolute; top: 5px; left: 5px; font-size: 18px; }
         .suit { font-size: 40px; }
-        #new-cards-btn {
+        #new-cards-btn, #mcts-btn{
             margin-top: 20px; padding: 10px 20px;
             font-size: 16px; cursor: pointer;
             border: none; border-radius: 5px;
@@ -31,12 +31,14 @@
             transition: background-color 0.2s;
         }
         #new-cards-btn:hover { background-color: #0056b3; }
+        #mcts-btn:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
     <h1>Hearts Game</h1>
     <h2>Your Cards</h2>
     <button id="new-cards-btn">Get New Cards</button>
+    <button id="mcts-btn">Decide via MCTS</button>
     <div id="player-cards"></div>
     
     <h2>Center Cards</h2>
@@ -47,6 +49,10 @@
 
         document.getElementById('new-cards-btn').addEventListener('click', function() {
             socket.emit('get_new_cards');
+        });
+
+        document.getElementById('mcts-btn').addEventListener('click', function() {
+          socket.emit('run_mcts');
         });
 
         socket.on('update_cards', function(data) {
