@@ -20,10 +20,6 @@ class DQN (nn.Module):
         self.to(self.device)
 
     def forward(self, state): 
-        ''' 
-        
-        
-        '''
         # state should be in the shape (1, 3*52). 
         # the first 52 are the cards in the agent's hand 
         # the second 52 are the cards observed in play so far

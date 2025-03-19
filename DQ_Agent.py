@@ -12,7 +12,7 @@ from Map import Map
 
 class State:
     '''
-    A game state at some time point t is defined as a single vector (1 x (3*52))
+    A game state at some time point t is defined as a single vector (3*52)
         - hand the agent currently holds before playing the trick
         - cards that the agent as seen in play before playing its own card
         - the next card that the agent intends to play in this trick
@@ -98,7 +98,18 @@ def generate_training_data(model : DQN) -> list:
                     index = map.get_index(rank=rand_card.rank, suit=rand_card.suit)
                     cards_seen[index] = 1
                 # Reset 
-                current_trick_cards = [] 
+                current_trick_cards = []
+
+    def learn(self):
+        # sample a minibatch of 1000 memories
+
+        # calculate the label for each sample 
+        # label y = sample_reward + gamma * next_action_max_q_val
+
+        # Compute MSE for all the m samples 
+        # MSE = 1/m * [sum i = 1 --> m : (Q_i - y_i) ^ 2]
+
+        # Backprop the loss
 
 
 
