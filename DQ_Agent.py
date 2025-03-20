@@ -8,6 +8,7 @@ import numpy as np
 from Game import Game
 import random
 from Map import Map
+from Card import Card
 
 
 class State:
@@ -18,13 +19,11 @@ class State:
         - the next card that the agent intends to play in this trick
     All will be represented as a one hot encoding
     '''
-    def __init__(self, hand : np.ndarray, cards_seen : np.ndarray, next_action : np.ndarray):
+    def __init__(self, hand : np.ndarray, cards_seen : np.ndarray, next_action : np.ndarray, game : Game):
         self.hand = hand
         self.cards_seen = cards_seen
         self.next_action = next_action
-    
-    def get_state(self):
-        return np.concatenate(self.hand, self.cards_seen, self.next_action)
+        self.game = game
 
 class Memory:
     '''
@@ -89,7 +88,7 @@ def generate_training_data(model : DQN) -> list:
             if len(game.trick) == 0:
                 # Calculate the necessary information for memory
                 reward = game.players[0].score - inital_score
-                current_state = State(hand=hand, cards_seen=cards_seen, next_action=next_state)
+                current_state = State(hand=hand, cards_seen=cards_seen, next_action=next_state, game=game)
                 memory = Memory(current_state, reward)
                 replay_memory.append(memory)
 
@@ -99,17 +98,60 @@ def generate_training_data(model : DQN) -> list:
                     cards_seen[index] = 1
                 # Reset 
                 current_trick_cards = []
+    return replay_memory
 
-    def learn(self):
+def get_all_possible_actions(state : State):
+    state.game.current_player = "Agent"
+    map = Map()
+    next_actions = []
+    for i in range (len(state.hand)):
+        if state.hand[i] == 1:
+            # We have this card. Need to check if it is a valid card
+            rank = map.dict[i][0]
+            suit = map.dict[i][1]
+            if state.game.is_valid_card(card=Card(suit=suit, rank=rank)):
+                action = np.zeros(shape=(52))
+                action[i] = 1
+                next_actions.append(action)
+    return next_actions
+
+
+def learn():
+    # Constants:
+    gamma = 0.001
+    model = DQN()
+    for _ in range (10):
+        # Zero the gradients
+        model.Q_network.optimiser.zero_grad()
+
         # sample a minibatch of 1000 memories
+        replay_memory = generate_training_data(model=model)
+        replay_memory = random.sample(replay_memory, 1000)
 
         # calculate the label for each sample 
         # label y = sample_reward + gamma * next_action_max_q_val
-
+        # Need to enumerate all the possible next moves from a given state
+        labels = []
+        predictions = []
+        for memory in replay_memory:
+            reward = memory.reward
+            state = memory.state
+            for next_action in get_all_possible_actions(state):
+                q_val = model.forward(next_action) # Assuming q_val is a vector of probabilities
+                y = reward + gamma * max(q_val)
+                labels.append(y)
+                predictions.append(max(q_val))
+            
         # Compute MSE for all the m samples 
         # MSE = 1/m * [sum i = 1 --> m : (Q_i - y_i) ^ 2]
+        #squared_errors = [(y_true - y_pred) ** 2 for y_true, y_pred in zip(labels, predictions)]
+        #mse = sum(squared_errors) / len(squared_errors)
 
         # Backprop the loss
+        loss = model.Q_network.loss(labels, predictions).to(model.Q_network.device)
+        loss = loss.clamp(-1, 1)
+        loss.backward()
+        model.Q_network.optimiser.step()
 
 
 
