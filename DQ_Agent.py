@@ -9,6 +9,7 @@ from Game import Game
 import random
 from Map import Map
 from Card import Card
+from scipy.stats import bernoulli
 
 
 class State:
@@ -43,6 +44,7 @@ def generate_training_data(model : DQN) -> list:
     '''
     replay_memory = []
     map = Map()
+    epsilon = 0.4
 
     for simulated_game in range (5000):
         game = Game(["Agent", "P1", "P2", "P3"])
@@ -61,7 +63,33 @@ def generate_training_data(model : DQN) -> list:
 
                 # Run the network to get a next action --> next card to play
                 # Translate the network output to rank and suit
-                # card = agent.chosen_card
+                current_state = State(hand=hand, cards_seen=cards_seen, next_action=next_state, game=game)
+                best_card = []
+                best_q_val = -np.inf
+                for next_state in get_all_possible_next_states(current_state):
+                    # For lack of a more creative name space...
+                    meaningful_name = np.concatenate(next_state.hand, next_state.cards_seen, next_state.next_action)
+                    q_val = model.forward(meaningful_name)
+                    if q_val > best_q_val:
+                        best_q_val = q_val
+                        # Translate the next_action OHE to a Card object
+                        for idx in range (len(next_state.next_action)):
+                            if next_state.next_action[idx] == 1:
+                                best_card = map.dict[idx + 1]
+                # Now that we have the network's best move, we need to either 1)make that move or 2)make a random move
+                # 1 - epsilon greedy exploration
+                r = bernoulli.rvs(1 - epsilon)
+                if r == 1:
+                    card = Card(suit=best_card[1], rank=best_card[0])
+                else:
+                    # Random action
+                    rand_card_index = random.randint(0, len(game.current_player.hand))
+                    rand_card = game.current_player.hand[rand_card_index]
+                    while not game.is_valid_card(rand_card):
+                        rand_card_index = random.randint(0, len(game.current_player.hand))
+                        rand_card = game.current_player.hand[rand_card_index]
+                    card = rand_card
+
                 game.play_card(game.deck.get_card(rank=card.rank, suit=card.suit))
 
 
@@ -87,38 +115,51 @@ def generate_training_data(model : DQN) -> list:
             # Check if the trick is over and create a Memory
             if len(game.trick) == 0:
                 # Calculate the necessary information for memory
-                reward = game.players[0].score - inital_score
+                reward = inital_score - game.players[0].score
                 current_state = State(hand=hand, cards_seen=cards_seen, next_action=next_state, game=game)
                 memory = Memory(current_state, reward)
                 replay_memory.append(memory)
 
                 # Update the cards seen with all the cards played in the terminated trick
                 for card in current_trick_cards:
-                    index = map.get_index(rank=rand_card.rank, suit=rand_card.suit)
+                    index = map.get_index(rank=card.rank, suit=card.suit)
                     cards_seen[index] = 1
                 # Reset 
                 current_trick_cards = []
     return replay_memory
 
-def get_all_possible_actions(state : State):
+def get_all_possible_next_states(state : State) -> list:
+    '''
+    Returns a list of State objects that contain all possible next actions from the input state
+    '''
     state.game.current_player = "Agent"
     map = Map()
-    next_actions = []
+    next_states = []
     for i in range (len(state.hand)):
         if state.hand[i] == 1:
-            # We have this card. Need to check if it is a valid card
-            rank = map.dict[i][0]
-            suit = map.dict[i][1]
+            # We have this card. Need to check if it is a valid card --> we can play it
+            rank = map.dict[i + 1][0]
+            suit = map.dict[i + 1][1]
             if state.game.is_valid_card(card=Card(suit=suit, rank=rank)):
-                action = np.zeros(shape=(52))
-                action[i] = 1
-                next_actions.append(action)
-    return next_actions
+                next_action = np.zeros(shape=(52))
+                next_action[i] = 1
+                # Remove this card from the hand
+                hand = state.hand
+                hand[i] = 0
+
+                # Add this card to cards seen
+                cards_seen = state.cards_seen
+                cards_seen[i] = 1
+
+                # We omit the game from the state because it doesn't need it
+                next_state = State(hand=hand, cards_seen=cards_seen, next_action=next_action, game=None)
+                next_states.append(next_state)
+    return next_states
 
 
 def learn():
     # Constants:
-    gamma = 0.001
+    gamma = 0.9
     model = DQN()
     for _ in range (10):
         # Zero the gradients
@@ -136,28 +177,16 @@ def learn():
         for memory in replay_memory:
             reward = memory.reward
             state = memory.state
-            for next_action in get_all_possible_actions(state):
-                q_val = model.forward(next_action) # Assuming q_val is a vector of probabilities
-                y = reward + gamma * max(q_val)
+            for next_state in get_all_possible_next_states(state):
+                # For lack of a more creative name space...
+                meaningful_name = np.concatenate(next_state.hand, next_state.cards_seen, next_state.next_action)
+                q_val = model.forward(meaningful_name) 
+                y = reward + gamma * q_val
                 labels.append(y)
-                predictions.append(max(q_val))
-            
-        # Compute MSE for all the m samples 
-        # MSE = 1/m * [sum i = 1 --> m : (Q_i - y_i) ^ 2]
-        #squared_errors = [(y_true - y_pred) ** 2 for y_true, y_pred in zip(labels, predictions)]
-        #mse = sum(squared_errors) / len(squared_errors)
+                predictions.append(q_val)
 
         # Backprop the loss
         loss = model.Q_network.loss(labels, predictions).to(model.Q_network.device)
         loss = loss.clamp(-1, 1)
         loss.backward()
         model.Q_network.optimiser.step()
-
-
-
-                
-        
-
-
-    
-        
