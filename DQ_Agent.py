@@ -46,8 +46,8 @@ def generate_training_data(model : DQN) -> list:
     map = Map()
     epsilon = 0.4
 
-    for simulated_game in range (5000):
-        game = Game(["Agent", "P1", "P2", "P3"])
+    for simulated_game in range (1):
+        game = Game(player_names=["Agent", "P1", "P2", "P3"], max_score=25)
         cards_seen = np.zeros(shape=(1,52))
         current_trick_cards = []
         # Loop for the entire game
@@ -55,7 +55,7 @@ def generate_training_data(model : DQN) -> list:
             inital_score = game.players[0].score
             if game.current_player.name == 'Agent':
                 # Note the agent's hand before playing the card
-                hand = np.zeros(shape=(1,52))
+                hand = np.zeros(shape=(52))
                 for card in game.players[0].hand:
                     index = map.get_index(rank=card.rank, suit=card.suit)
                     hand[index] = 1
@@ -63,7 +63,7 @@ def generate_training_data(model : DQN) -> list:
 
                 # Run the network to get a next action --> next card to play
                 # Translate the network output to rank and suit
-                current_state = State(hand=hand, cards_seen=cards_seen, next_action=next_state, game=game)
+                current_state = State(hand=hand, cards_seen=cards_seen, next_action=None, game=game)
                 best_card = []
                 best_q_val = -np.inf
                 for next_state in get_all_possible_next_states(current_state):
@@ -77,7 +77,7 @@ def generate_training_data(model : DQN) -> list:
                             if next_state.next_action[idx] == 1:
                                 best_card = map.dict[idx + 1]
                 # Now that we have the network's best move, we need to either 1)make that move or 2)make a random move
-                # 1 - epsilon greedy exploration
+                # Determined by 1 - epsilon greedy exploration
                 r = bernoulli.rvs(1 - epsilon)
                 if r == 1:
                     card = Card(suit=best_card[1], rank=best_card[0])
@@ -110,7 +110,7 @@ def generate_training_data(model : DQN) -> list:
                 game.play_card(rand_card)
 
                 # Mark the played card as having been played in this trick
-                current_trick_cards.append(card)
+                current_trick_cards.append(rand_card)
 
             # Check if the trick is over and create a Memory
             if len(game.trick) == 0:
@@ -163,7 +163,7 @@ def learn():
     model = DQN()
     for _ in range (10):
         # Zero the gradients
-        model.Q_network.optimiser.zero_grad()
+        model.optimiser.zero_grad()
 
         # sample a minibatch of 1000 memories
         replay_memory = generate_training_data(model=model)
@@ -186,7 +186,9 @@ def learn():
                 predictions.append(q_val)
 
         # Backprop the loss
-        loss = model.Q_network.loss(labels, predictions).to(model.Q_network.device)
+        loss = model.loss(labels, predictions).to(model.device)
         loss = loss.clamp(-1, 1)
         loss.backward()
-        model.Q_network.optimiser.step()
+        model.optimiser.step()
+
+learn()
