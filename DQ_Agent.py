@@ -10,6 +10,7 @@ import random
 from Map import Map
 from Card import Card
 from scipy.stats import bernoulli
+import pickle
 
 
 class State:
@@ -48,28 +49,29 @@ def generate_training_data(model : DQN) -> list:
 
     for simulated_game in range (1):
         game = Game(player_names=["Agent", "P1", "P2", "P3"], max_score=25)
-        cards_seen = np.zeros(shape=(1,52))
+        cards_seen = np.zeros(shape=(52))
         current_trick_cards = []
         # Loop for the entire game
         while len(game.current_player.hand) > 0:
             inital_score = game.players[0].score
             if game.current_player.name == 'Agent':
                 # Note the agent's hand before playing the card
-                hand = np.zeros(shape=(52))
-                for card in game.players[0].hand:
+                hand_ = np.zeros(shape=(52))
+                for card in game.current_player.hand:
                     index = map.get_index(rank=card.rank, suit=card.suit)
-                    hand[index] = 1
+                    hand_[index] = 1
 
 
                 # Run the network to get a next action --> next card to play
                 # Translate the network output to rank and suit
-                current_state = State(hand=hand, cards_seen=cards_seen, next_action=None, game=game)
+                current_state = State(hand=hand_, cards_seen=cards_seen, next_action=None, game=game)
                 best_card = []
                 best_q_val = -np.inf
                 for next_state in get_all_possible_next_states(current_state):
                     # For lack of a more creative name space...
-                    meaningful_name = np.concatenate(next_state.hand, next_state.cards_seen, next_state.next_action)
-                    q_val = model.forward(meaningful_name)
+                    meaningful_name = np.concatenate((next_state.hand, next_state.cards_seen, next_state.next_action), axis=None)
+                    meaningful_name = T.from_numpy(meaningful_name)
+                    q_val = model.forward(meaningful_name.float())
                     if q_val > best_q_val:
                         best_q_val = q_val
                         # Translate the next_action OHE to a Card object
@@ -81,9 +83,9 @@ def generate_training_data(model : DQN) -> list:
                 r = bernoulli.rvs(1 - epsilon)
                 if r == 1:
                     card = Card(suit=best_card[1], rank=best_card[0])
-                else:
+                elif r == 0 or not game.is_valid_card(card):
                     # Random action
-                    rand_card_index = random.randint(0, len(game.current_player.hand))
+                    rand_card_index = random.randint(0, len(game.current_player.hand) - 1)
                     rand_card = game.current_player.hand[rand_card_index]
                     while not game.is_valid_card(rand_card):
                         rand_card_index = random.randint(0, len(game.current_player.hand))
@@ -95,17 +97,17 @@ def generate_training_data(model : DQN) -> list:
 
                 # Mark the played card as the next_action
                 index = map.get_index(rank=card.rank, suit=card.suit)
-                next_state = np.zeros(shape=(1,52))
+                next_state = np.zeros(shape=(52))
                 next_state[index] = 1
 
                 # Add played card to current trick 
                 current_trick_cards.append(card)
             else:
                 # Get a random card and submit to game object
-                rand_card_index = random.randint(0, len(game.current_player.hand))
+                rand_card_index = random.randint(0, len(game.current_player.hand) - 1)
                 rand_card = game.current_player.hand[rand_card_index]
                 while not game.is_valid_card(rand_card):
-                    rand_card_index = random.randint(0, len(game.current_player.hand))
+                    rand_card_index = random.randint(0, len(game.current_player.hand) - 1)
                     rand_card = game.current_player.hand[rand_card_index]
                 game.play_card(rand_card)
 
@@ -116,7 +118,7 @@ def generate_training_data(model : DQN) -> list:
             if len(game.trick) == 0:
                 # Calculate the necessary information for memory
                 reward = inital_score - game.players[0].score
-                current_state = State(hand=hand, cards_seen=cards_seen, next_action=next_state, game=game)
+                current_state = State(hand=hand_, cards_seen=cards_seen, next_action=next_state, game=game)
                 memory = Memory(current_state, reward)
                 replay_memory.append(memory)
 
@@ -126,13 +128,23 @@ def generate_training_data(model : DQN) -> list:
                     cards_seen[index] = 1
                 # Reset 
                 current_trick_cards = []
+
+    filename = "random_replay_memory"
+
+    try:
+        with open(filename, 'wb') as file:
+            pickle.dump(replay_memory, file)
+        print(f"List successfully pickled to '{filename}'")
+    except Exception as e:
+        print(f"An error occurred during pickling: {e}")
+
     return replay_memory
 
 def get_all_possible_next_states(state : State) -> list:
     '''
     Returns a list of State objects that contain all possible next actions from the input state
     '''
-    state.game.current_player = "Agent"
+    state.game.current_player = state.game.players[0]
     map = Map()
     next_states = []
     for i in range (len(state.hand)):
