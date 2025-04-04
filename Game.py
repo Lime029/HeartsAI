@@ -4,7 +4,7 @@ from Player import Player
 import random
 
 class Game:
-    def __init__(self, player_names, max_score, verbose=True):
+    def __init__(self, player_names, max_score, verbose=False):
         self.players = [Player(i,name) for i,name in enumerate(player_names)]
         self.max_score = max_score
         self.deck = Deck()
@@ -62,7 +62,7 @@ class Game:
             return False
 
         if len(self.trick) == 0: # Starting trick with this card
-            if card.suit == 'Hearts' and not self.hearts_broken and not self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
+            if card.suit == 'Hearts' and not self.hearts_broken and self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
                 return False
             trick_suit = card.suit
         else:
