@@ -198,8 +198,10 @@ def learn():
         labels = T.tensor(labels, dtype=T.float32)
         predictions = T.tensor(predictions, dtype=T.float32)
         loss = model.loss(labels, predictions).to(model.device)
-        loss = loss.clamp(-1, 1)
+        loss = loss.clamp(-1, 1) 
+        loss.requires_grad = True
         loss.backward()
-        model.optimiser.step()
+        model.optimiser.step() 
+        print(f"Loss is {loss.item()}")
 
 learn()
