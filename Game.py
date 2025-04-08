@@ -4,10 +4,11 @@ from Player import Player
 import random
 
 class Game:
-    def __init__(self, player_names, max_score, verbose=False):
+    def __init__(self, player_names, max_score, verbose=False, jack_diamonds=True):
         self.players = [Player(i,name) for i,name in enumerate(player_names)]
         self.max_score = max_score
         self.verbose = verbose
+        self.jack_diamonds = jack_diamonds
         self.round = 0
         self.new_round()
 
@@ -29,7 +30,7 @@ class Game:
         """Deals out a new hand and starts play again."""
         for p in self.players:
             p.round_score = 0
-            #p.shooting_moon = True
+            p.shooting_moon = True
         
         self.deck = Deck()
         self.deal_cards()
@@ -39,16 +40,16 @@ class Game:
 
     def resolve_round(self):
         # Set proper scores
-        # shot_moon = any(p.shooting_moon for p in self.players)
+        shot_moon = any(p.shooting_moon for p in self.players)
         for p in self.players:
             p.score += p.round_score
-        # if shot_moon:
-        #     for p in self.players:
-        #         # +26 for everyone who didn't shoot, 0 for shooter
-        #         if p.round_score <= 0:
-        #             p.score += 26
-        #         else: # This is the shooter
-        #             p.score -= p.round_score
+        if shot_moon:
+            for p in self.players:
+                # +26 for everyone who didn't shoot, 0 at most for shooter
+                if p.round_score <= 0:
+                    p.score += 26
+                else: # This is the shooter
+                    p.score -= 26
         
         if self.verbose:
             print(f"Round {self.round} ended.")
@@ -105,11 +106,13 @@ class Game:
         # Calculate points
         points = sum(1 for _, c in self.trick if c.suit == 'Hearts')
         points += 13 if Card("Spades", "Q") in [c for _, c in self.trick] else 0
-        # if points > 0:
-        #     # No other player besides winner can now shoot the moon
-        #     for p in self.players:
-        #         if p.index != winner.index:
-        #             p.shooting_moon = False
+        if points > 0:
+            # No other player besides winner can now shoot the moon
+            for p in self.players:
+                if p.index != winner.index:
+                    p.shooting_moon = False
+        if self.jack_diamonds: # Not required to shoot moon
+            points -= 10 if Card("Diamonds", "J") in [c for _, c in self.trick] else 0
 
         winner.round_score += points
         self.trick = []
