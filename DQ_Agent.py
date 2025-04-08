@@ -53,7 +53,7 @@ def generate_training_data(model : DQN, epoch : int) -> list:
         current_trick_cards = []
         # Loop for the entire game
         while len(game.current_player.hand) > 0:
-            inital_score = game.players[0].score
+            inital_score = game.players[0].round_score
             if game.current_player.name == 'Agent' or epoch > 0:
                 # Note the agent's hand before playing the card
                 hand_ = np.zeros(shape=(52))
@@ -110,7 +110,7 @@ def generate_training_data(model : DQN, epoch : int) -> list:
             # Check if the trick is over and create a Memory
             if len(game.trick) == 0:
                 # Calculate the necessary information for memory
-                reward = inital_score - game.players[0].score
+                reward = inital_score - game.players[0].round_score
                 # Get the agent's hand
                 hand_ = np.zeros(shape=(52))
                 for card in game.players[0].hand:

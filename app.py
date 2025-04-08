@@ -8,7 +8,7 @@ from Card import Card
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
+game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100, True)
 
 @app.route('/')
 def index():
@@ -41,4 +41,4 @@ def get_new_cards():
     emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

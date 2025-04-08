@@ -7,12 +7,9 @@ class Game:
     def __init__(self, player_names, max_score, verbose=False):
         self.players = [Player(i,name) for i,name in enumerate(player_names)]
         self.max_score = max_score
-        self.deck = Deck()
-        self.deal_cards()
-        self.trick = [] # Caution: A list of pairs (playerIndex, card)
-        self.hearts_broken = False
-        self.current_player = self.find_starting_player()
         self.verbose = verbose
+        self.round = 0
+        self.new_round()
 
     def deal_cards(self):
         """Deal 13 cards to each player."""
@@ -27,21 +24,47 @@ class Game:
                 if card.suit == "Clubs" and card.rank == "2":
                     return player
         raise ValueError("Nobody has the 2 of clubs.")
+    
+    def new_round(self):
+        """Deals out a new hand and starts play again."""
+        for p in self.players:
+            p.round_score = 0
+            #p.shooting_moon = True
+        
+        self.deck = Deck()
+        self.deal_cards()
+        self.trick = [] # Caution: A list of pairs (playerIndex, card)
+        self.hearts_broken = False
+        self.current_player = self.find_starting_player()
+
+    def resolve_round(self):
+        # Set proper scores
+        # shot_moon = any(p.shooting_moon for p in self.players)
+        for p in self.players:
+            p.score += p.round_score
+        # if shot_moon:
+        #     for p in self.players:
+        #         # +26 for everyone who didn't shoot, 0 for shooter
+        #         if p.round_score <= 0:
+        #             p.score += 26
+        #         else: # This is the shooter
+        #             p.score -= p.round_score
+        
+        if self.verbose:
+            print(f"Round {self.round} ended.")
+            for p in self.players:
+                print(f"{p.name} now has {p.score} points.")
+        
+        if not self.is_game_over():
+            self.round += 1
+            self.new_round()
+        elif self.verbose:
+            print(f"Game ended because someone got {self.max_score} points.")
 
     def play_card(self, card):
         """Current player attempts to play a card."""
-        if card not in self.current_player.hand:
-            raise ValueError("Invalid move: You don't have that card.")
-
-        if len(self.trick) == 0: # Starting trick with this card
-            if card.suit == 'Hearts' and not self.hearts_broken and self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
-                raise ValueError("Invalid move: Hearts have not been broken.")
-            trick_suit = card.suit
-        else:
-            trick_suit = self.trick[0][1].suit
-
-        if card.suit != trick_suit and self.current_player.has_any(trick_suit):
-            raise ValueError("Invalid move: You must follow the suit if possible.")
+        if not self.is_valid_card(card):
+            raise ValueError("Invalid card played.")
 
         self.current_player.hand.remove(card)
         self.trick.append((self.current_player.index, card))
@@ -82,13 +105,21 @@ class Game:
         # Calculate points
         points = sum(1 for _, c in self.trick if c.suit == 'Hearts')
         points += 13 if Card("Spades", "Q") in [c for _, c in self.trick] else 0
+        # if points > 0:
+        #     # No other player besides winner can now shoot the moon
+        #     for p in self.players:
+        #         if p.index != winner.index:
+        #             p.shooting_moon = False
 
-        winner.score += points
+        winner.round_score += points
         self.trick = []
         self.current_player = winner
 
         if self.verbose:
             print(f"{winner.name} won the trick and received {points} points.")
+        
+        if len(self.current_player.hand) == 0:
+            self.resolve_round()
 
     def is_game_over(self):
         """Check if any player has reached the max points."""
