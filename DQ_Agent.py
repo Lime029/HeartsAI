@@ -32,11 +32,14 @@ class Memory:
     A memory is a single time point in the replay memory. A training memory needs
         - current State
         - reward recived for taking the action (as stored in the state)
+        - the action the model took at current State. A one hot encoding of the card played
+        - the next State after the agent takes the action
     '''
-    def __init__(self, current_state : State, reward : float):
+    def __init__(self, current_state : State, reward : float, action : list, next_state : State):
         self.current_state = current_state
         self.reward = reward
-
+        self.action = action
+        self.next_state = next_state
 
 def generate_training_data(model : DQN, epoch : int) -> list:
     '''
@@ -47,28 +50,27 @@ def generate_training_data(model : DQN, epoch : int) -> list:
     map = Map()
     epsilon = 0.4
 
-    for simulated_game in range (5000):
-        game = Game(player_names=["Agent", "P1", "P2", "P3"], max_score=25)
+    for simulated_game in range (50):
+        game = Game(player_names=["Agent", "P1", "P2", "P3"], max_score=25, verbose=False)
         cards_seen = np.zeros(shape=(52))
         current_trick_cards = []
         # Loop for the entire game
         while len(game.current_player.hand) > 0:
-            inital_score = game.players[0].score
             if game.current_player.name == 'Agent' or epoch > 0:
                 # Note the agent's hand before playing the card
-                hand_ = np.zeros(shape=(52))
+                hand = np.zeros(shape=(52))
                 for card in game.current_player.hand:
                     index = map.get_index(rank=card.rank, suit=card.suit)
-                    hand_[index] = 1
+                    hand[index] = 1
 
 
                 # Run the network to get a next action --> next card to play
                 # Translate the network output to rank and suit
                 best_card = []
                 best_q_val = -np.inf
-                for next_action in get_all_possible_next_actions(hand=hand_, game=game, is_agent=False):
+                for next_action in get_all_possible_next_actions(hand=hand, game=game, is_agent=False):
                     # For lack of a more creative name space...
-                    meaningful_name = np.concatenate((hand_, cards_seen, next_action), axis=None)
+                    meaningful_name = np.concatenate((hand, cards_seen, next_action), axis=None)
                     meaningful_name = T.from_numpy(meaningful_name)
                     q_val = model.forward(meaningful_name.float())
                     if q_val > best_q_val:
@@ -91,7 +93,34 @@ def generate_training_data(model : DQN, epoch : int) -> list:
                         rand_card = game.current_player.hand[rand_card_index]
                     card = rand_card
 
-                game.play_card(game.deck.get_card(rank=card.rank, suit=card.suit))
+                if game.current_player.name == 'Agent':
+                    # Convert the agent's next card to a OHE
+                    ohe = np.zeros(shape=(52))
+                    index = map.get_index(rank=card.rank, suit=card.suit)
+                    ohe[index] = 1
+                    agent_action = ohe
+
+                
+                    current_state = State(hand=hand, cards_seen=cards_seen, game=copy.deepcopy(game))
+                    inital_score = game.players[0].score
+                    
+                    # Make the agent's next move
+                    game.play_card(game.deck.get_card(rank=card.rank, suit=card.suit))
+
+                    reward = inital_score - game.players[0].score
+                    # Remove the card from the hand and set it as seen
+                    for i in range(len(hand)):
+                        if hand[i] == 1 and agent_action[i] == 1:
+                            hand[i] = 0
+                            cards_seen[i] = 1
+                    next_state = State(hand=hand, cards_seen=cards_seen, game=copy.deepcopy(game))
+
+                    # Create a Memory
+                    memory = Memory(current_state=current_state, reward=reward, action=agent_action, next_state=next_state)
+                    replay_memory.append(memory)
+                    
+                else:
+                    game.play_card(game.deck.get_card(rank=card.rank, suit=card.suit))
 
                 # Add played card to current trick 
                 current_trick_cards.append(card)
@@ -107,36 +136,23 @@ def generate_training_data(model : DQN, epoch : int) -> list:
 
                 # Mark the played card as having been played in this trick
                 current_trick_cards.append(rand_card)
-            # Check if the trick is over and create a Memory
-            if len(game.trick) == 0:
-                # Calculate the necessary information for memory
-                reward = inital_score - game.players[0].score
-                # Get the agent's hand
-                hand_ = np.zeros(shape=(52))
-                for card in game.players[0].hand:
-                    index = map.get_index(rank=card.rank, suit=card.suit)
-                    hand_[index] = 1
-                current_state = State(hand=hand_, cards_seen=cards_seen, game=copy.deepcopy(game))
-                memory = Memory(current_state, reward)
-                replay_memory.append(memory)
 
+            # Check if the trick is over
+            if len(game.trick) == 0:
                 # Update the cards seen with all the cards played in the terminated trick
                 for card in current_trick_cards:
                     index = map.get_index(rank=card.rank, suit=card.suit)
                     cards_seen[index] = 1
                 # Reset 
                 current_trick_cards = []
-    if epoch == 0:
+    '''if epoch == 0:
         filename = "random_replay_memory"
     else:
         filename = "replay_memory_" + epoch
+    with open(filename, 'wb') as file:
+        pickle.dump(replay_memory, file)
+    print(f"List successfully pickled to '{filename}'")'''
 
-    try:
-        with open(filename, 'wb') as file:
-            pickle.dump(replay_memory, file)
-        print(f"List successfully pickled to '{filename}'")
-    except Exception as e:
-        print(f"An error occurred during pickling: {e}")
 
     return replay_memory
 
@@ -172,10 +188,10 @@ def learn():
         model.optimiser.zero_grad()
 
         # sample a minibatch of 1000 memories
-        # replay_memory = generate_training_data(model=model, epoch=epoch)
-        with open("random_replay_memory", 'rb') as f:
-           replay_memory = pickle.load(f)
-        replay_memory = random.sample(replay_memory, 1000)
+        replay_memory = generate_training_data(model=model, epoch=epoch)
+        '''with open("random_replay_memory", 'rb') as f:
+           replay_memory = pickle.load(f)'''
+        replay_memory = random.sample(replay_memory, 10)
 
         # calculate the label for each sample 
         # label y = sample_reward + gamma * next_action_max_q_val
@@ -183,16 +199,23 @@ def learn():
         labels = []
         predictions = []
         for memory in replay_memory:
-            reward = memory.reward
-            state = memory.current_state
-            for next_action in get_all_possible_next_actions(hand=state.hand, game=state.game, is_agent=True):
-                # For lack of a more creative name space...
-                meaningful_name = np.concatenate((state.hand, state.cards_seen, next_action), axis=None)
-                meaningful_name = T.from_numpy(meaningful_name)
-                q_val = model.forward(meaningful_name.float())
-                y = reward + gamma * q_val
-                labels.append(y)
-                predictions.append(q_val)
+
+            max_a_q_val = None
+            for next_action in get_all_possible_next_actions(hand=memory.next_state.hand, game=memory.next_state.game, is_agent=True):
+                s = np.concatenate((memory.next_state.hand, memory.next_state.cards_seen, next_action), axis=None)
+                s = T.from_numpy(s)
+                pred_q_val = model.forward(state=s.float())
+                if max_a_q_val == None or pred_q_val > max_a_q_val:
+                    max_a_q_val = pred_q_val
+            if max_a_q_val: # not a terminal current state
+                labels.append(memory.reward + gamma * max_a_q_val)
+            
+                s = np.concatenate((memory.current_state.hand, memory.current_state.cards_seen, memory.action), axis=None)
+                s = T.from_numpy(s)
+                pred_q_val = model.forward(state=s.float())
+                predictions.append(pred_q_val)
+            
+
 
         # Backprop the loss
         labels = T.tensor(labels, dtype=T.float32)
@@ -203,5 +226,10 @@ def learn():
         loss.backward()
         model.optimiser.step() 
         print(f"Loss is {loss.item()}")
+
+
+    with open('model', 'wb') as file:
+        pickle.dump(model, file)
+    print(f"Model successfully pickled")
 
 learn()
