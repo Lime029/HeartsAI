@@ -137,8 +137,6 @@ def generate_training_data(model : DQN, epoch : int) -> list:
                 # Mark the played card as having been played in this trick
                 current_trick_cards.append(rand_card)
 
-            # Check if the trick is over and create a Memory
-            if len(game.trick) == 0:
             # Check if the trick is over
             if len(game.trick) == 0:
                 # Update the cards seen with all the cards played in the terminated trick
