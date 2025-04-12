@@ -66,7 +66,7 @@
 
         .btn-container {
             position: fixed;
-            bottom: 20px;
+            top: 20px;
             right: 20px;
             display: flex;
             flex-direction: column;
@@ -97,10 +97,13 @@
 
         #player-info {
             position: fixed;
-            bottom: 20px;
+            top: 20px;
             left: 20px;
-            text-align: left;
-            color: rgb(255, 255, 114);
+            background-color: rgb(255, 230, 230);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            color: black;
         }
 
         #player-name {
@@ -110,6 +113,11 @@
 
         #player-score {
             font-size: 17px;
+        }
+
+        .dimmed {
+            opacity: 0.5;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -128,6 +136,7 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
         var socket = io();
 
         document.getElementById('new-cards-btn').addEventListener('click', function () {
@@ -139,13 +148,36 @@
         });
 
         socket.on('update_cards', function (data) {
+
+            const playerNameElement = document.getElementById('player-name');
+            const playerScoreElement = document.getElementById('player-score');
+
+            if (!playerNameElement || !playerScoreElement) {
+                console.error("Player name or score element not found.");
+                return; 
+            }
+
             let playerDiv = document.getElementById('player-cards');
             let centerDiv = document.getElementById('center-cards');
             playerDiv.innerHTML = '';
             centerDiv.innerHTML = '';
 
-            document.getElementById('player-name').textContent = data.player_name;
-            document.getElementById('player-score').textContent = "Score: " + data.player_score;
+            playerNameElement.textContent = data.player_name;
+            playerScoreElement.textContent = "Score: " + data.player_score;
+
+            if (data.is_main_player) {
+                playerNameElement.style.color = '#007bff'; 
+                playerScoreElement.style.color = '#007bff'; 
+            } else {
+                playerNameElement.style.color = '#ff3f3f';
+                playerScoreElement.style.color = '#ff3f3f'; 
+            }
+
+            if (data.is_main_player) {
+                playerDiv.classList.remove('dimmed');
+            } else {
+                playerDiv.classList.add('dimmed');
+            }
 
             function createCardElement(card, isPlayerCard) {
                 let cardElement = document.createElement('div');
@@ -163,9 +195,17 @@
                 return cardElement;
             }
 
-            data.player_cards.forEach(card => playerDiv.appendChild(createCardElement(card, true)));
+            data.display_cards.forEach(card => playerDiv.appendChild(createCardElement(card, true)));
             data.center_cards.forEach(card => centerDiv.appendChild(createCardElement(card, false)));
+
+            if (!data.is_main_player) {
+            const delay = 800 + Math.random() * 600;
+            setTimeout(() => {
+                document.getElementById('mcts-btn').click();
+            }, delay);
+        }
         });
+    });
     </script>
 </body>
 </html>

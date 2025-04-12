@@ -13,6 +13,7 @@ class Game:
         self.hearts_broken = False
         self.current_player = self.find_starting_player()
         self.verbose = verbose
+        self.main_player = self.players[0]
 
     def deal_cards(self):
         """Deal 13 cards to each player."""
