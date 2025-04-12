@@ -1,59 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Hearts Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #player-cards, #center-cards { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            background: green;
+            color: white;
+        }
+
+        #center-cards {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #player-cards {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+        }
+
         .card {
-            width: 100px; height: 150px;
+            width: 100px;
+            height: 150px;
             border-radius: 8px;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            font-size: 24px; font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-            background-color: white; border: 1px solid #000;
+            background-color: white;
+            border: 1px solid #000;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
         }
-        .red { color: red; } .black { color: black; }
-        .card:hover { transform: scale(1.1); box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4); }
-        .rank { position: absolute; top: 5px; left: 5px; font-size: 18px; }
-        .suit { font-size: 40px; }
-        #new-cards-btn {
-            margin-top: 20px; padding: 10px 20px;
-            font-size: 16px; cursor: pointer;
-            border: none; border-radius: 5px;
-            background-color: #007bff; color: white;
-            transition: background-color 0.2s;
+
+        .red { color: red; }
+        .black { color: black; }
+
+        .card:hover {
+            transform: scale(1.1);
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
         }
-        #new-cards-btn:hover { background-color: #0056b3; }
+
+        .rank {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 18px;
+        }
+
+        .suit { font-size: 40px; }
+
+        #new-cards-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 18px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            background-color: #007bff;
+            color: white;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.4);
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        #new-cards-btn:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        #player-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            text-align: left;
+            color: rgb(255, 255, 114);
+        }
+
+        #player-name {
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        #player-score {
+            font-size: 17px;
+        }
     </style>
 </head>
 <body>
-    <h1>Hearts Game</h1>
-    <h2>Your Cards</h2>
     <button id="new-cards-btn">Get New Cards</button>
-    <div id="player-cards"></div>
-    
-    <h2>Center Cards</h2>
+
     <div id="center-cards"></div>
+    <div id="player-cards"></div>
+
+    <div id="player-info">
+        <div id="player-name"></div>
+        <div id="player-score"></div>
+    </div>
 
     <script>
         var socket = io();
 
-        document.getElementById('new-cards-btn').addEventListener('click', function() {
+        document.getElementById('new-cards-btn').addEventListener('click', function () {
             socket.emit('get_new_cards');
         });
 
-        socket.on('update_cards', function(data) {
+        socket.on('update_cards', function (data) {
             let playerDiv = document.getElementById('player-cards');
             let centerDiv = document.getElementById('center-cards');
             playerDiv.innerHTML = '';
             centerDiv.innerHTML = '';
+
+            document.getElementById('player-name').textContent = data.player_name;
+            document.getElementById('player-score').textContent = "Score: " + data.player_score;
 
             function createCardElement(card, isPlayerCard) {
                 let cardElement = document.createElement('div');
@@ -65,7 +139,7 @@
 
                 if (isPlayerCard) {
                     cardElement.style.cursor = "pointer";
-                    cardElement.onclick = function() { socket.emit('play_card', card); };
+                    cardElement.onclick = function () { socket.emit('play_card', card); };
                 }
 
                 return cardElement;
