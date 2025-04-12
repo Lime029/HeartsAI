@@ -17,6 +17,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 print("Creating initial game state...")
 game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
+mcts_players = ["Meal","Shraf"]
+dq_players = ["Simi"]
 
 def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]):
     """Emit the current game state to all clients."""
@@ -34,7 +36,9 @@ def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.tr
         "player_score": game.current_player.score,
         "is_main_player": is_main_player,
         "banner": game.banner,
-        "player_scores": player_scores 
+        "player_scores": player_scores,
+        "mcts_players": mcts_players,
+        "dq_players": dq_players,
     }, broadcast=True)
 
 @app.route('/')
@@ -81,6 +85,16 @@ def run_mcts():
     s = State(game)
     move = mcts.run(s, 1000, verbose=False)
     print(f"ISMCTS chose move: {move}")
+    play_card(Game.dict_repr(move))
+
+@socketio.on('run_dq')
+def run_dq():
+    global game
+    print("Running DQ...")
+    mcts = ISMCTS(game.current_player.index)
+    s = State(game)
+    move = mcts.run(s, 1000, verbose=False)
+    print(f"DQ chose move: {move}")
     play_card(Game.dict_repr(move))
 
 if __name__ == '__main__':

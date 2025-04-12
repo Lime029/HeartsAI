@@ -130,6 +130,11 @@
             transform: scale(1.05);
         }
 
+        #dq-btn:hover { 
+            background-color: #0056b3; 
+            transform: scale(1.05);
+        }
+
         #player-info {
             position: fixed;
             top: 20px;
@@ -162,6 +167,7 @@
     <div class="btn-container">
         <button class="btn" id="new-cards-btn">Get New Cards</button>
         <button class="btn" id="mcts-btn">Decide via MCTS</button>
+        <button class="btn" id="dq-btn">Decide via DQ</button>
     </div>
 
     <div id="center-cards"></div>
@@ -169,7 +175,7 @@
 
     <div id="player-info">
         <div id="player-name"></div>
-        <div style="display:none" id="player-score"></div>
+        <div id="player-score"></div>
     </div>
 
     <div id="player-scores-box">
@@ -190,18 +196,22 @@
           socket.emit('run_mcts');
         });
 
+        document.getElementById('dq-btn').addEventListener('click', function() {
+          socket.emit('run_dq');
+        });
+
         socket.on('update_cards', function (data) {
 
             const playerNameElement = document.getElementById('player-name');
-            const playerScoreElement = document.getElementById('player-score');
+            const playerTagElement = document.getElementById('player-score');
             const gameBanner = document.getElementById('game-banner');
             const playerScoresBox = document.getElementById('player-scores-box');
             const playerScoresList = document.getElementById('player-scores-list');
 
-            if (!playerNameElement || !playerScoreElement) {
-                console.error("Player name or score element not found.");
-                return; 
-            }
+            // if (!playerNameElement || !playerScoreElement) {
+            //     console.error("Player name or score element not found.");
+            //     return; 
+            // }
 
             let playerDiv = document.getElementById('player-cards');
             let centerDiv = document.getElementById('center-cards');
@@ -209,14 +219,27 @@
             centerDiv.innerHTML = '';
 
             playerNameElement.textContent = data.player_name;
-            playerScoreElement.textContent = "Score: " + data.player_score;
+            // playerTagElement.textContent = "Score: " + data.player_score;
+
+            let tag = "";
+
+            if (data.dq_players.includes(data.player_name)) {
+                tag = "DQ";
+            } else if (data.mcts_players.includes(data.player_name)) {
+                tag = "MCTS";
+            } else if (data.player_name === data.player_name) {
+                tag = "Player";
+            }
+
+            playerTagElement.textContent = tag;
+
 
             if (data.is_main_player) {
                 playerNameElement.style.color = '#007bff'; 
-                playerScoreElement.style.color = '#007bff'; 
+                playerTagElement.style.color = '#007bff'; 
             } else {
                 playerNameElement.style.color = '#ff3f3f';
-                playerScoreElement.style.color = '#ff3f3f'; 
+                playerTagElement.style.color = '#ff3f3f'; 
             }
 
             if (data.is_main_player) {
@@ -244,10 +267,17 @@
             data.display_cards.forEach(card => playerDiv.appendChild(createCardElement(card, true)));
             data.center_cards.forEach(card => centerDiv.appendChild(createCardElement(card, false)));
 
-            if (!data.is_main_player) {
+            if (!data.is_main_player && data.mcts_players.includes(data.player_name)) {
             const delay = 800 + Math.random() * 600;
             setTimeout(() => {
                 document.getElementById('mcts-btn').click();
+            }, delay);
+        }
+
+        if (!data.is_main_player && data.dq_players.includes(data.player_name)) {
+            const delay = 800 + Math.random() * 600;
+            setTimeout(() => {
+                document.getElementById('dq-btn').click();
             }, delay);
         }
 
@@ -258,19 +288,29 @@
                     gameBanner.style.display = 'none';
                 }
 
-                playerScoresList.innerHTML = '';  
-                data.player_scores.forEach(function(player) {
-                    let playerScoreItem = document.createElement('div');
-                    playerScoreItem.classList.add('player-score-item');
-                    playerScoreItem.textContent = `${player.name}: ${player.score}`;
-                    playerScoresList.appendChild(playerScoreItem);
-                });
+            playerScoresList.innerHTML = '';  
+            data.player_scores.forEach(function(player) {
+            let playerScoreItem = document.createElement('div');
+            playerScoreItem.classList.add('player-score-item');
 
-                if (data.player_scores && data.player_scores.length > 0) {
-                    playerScoresBox.style.display = 'block';
-                } else {
-                    playerScoresBox.style.display = 'none';
-                }
+            let tags = [];
+            // if (player.name === data.is_main_player) tags.push("Player");
+            if (data.mcts_players.includes(player.name)) tags.push("MCTS");
+            if (data.dq_players.includes(player.name)) tags.push("DQ");
+
+            let tagText = tags.length > 0 ? ` (${tags.join(", ")})` : "";
+
+            playerScoreItem.innerHTML = `<strong>${player.name}</strong>${tagText}: ${player.score}`;
+            playerScoresList.appendChild(playerScoreItem);
+        });
+
+        if (data.player_scores && data.player_scores.length > 0) {
+            playerScoresBox.style.display = 'block';
+        } else {
+            playerScoresBox.style.display = 'none';
+        }
+
+
 
         });
     });
