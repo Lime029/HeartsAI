@@ -86,7 +86,10 @@ class Game:
             return False
 
         if len(self.trick) == 0: # Starting trick with this card
-            if card.suit == 'Hearts' and not self.hearts_broken and self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
+            if len(self.current_player.hand) == 13: # Starting the round (must be 2 of clubs)
+                if not (card.suit == 'Clubs' and card.rank == '2'):
+                    return False
+            elif card.suit == 'Hearts' and not self.hearts_broken and self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
                 return False
             trick_suit = card.suit
         else:
