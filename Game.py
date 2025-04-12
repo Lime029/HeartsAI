@@ -14,6 +14,7 @@ class Game:
         self.current_player = self.find_starting_player()
         self.verbose = verbose
         self.main_player = self.players[0]
+        self.banner = "Welcome to Hearts AI"
 
     def deal_cards(self):
         """Deal 13 cards to each player."""
@@ -89,6 +90,7 @@ class Game:
         self.current_player = winner
 
         if self.verbose:
+            self.banner = f"{winner.name} won the trick!"
             print(f"{winner.name} won the trick and received {points} points.")
 
     def is_game_over(self):

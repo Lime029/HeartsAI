@@ -23,6 +23,8 @@ def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.tr
     print("Emitting game state...")
     print(trick_cards)
 
+    player_scores = [{"name": player.name, "score": player.score} for player in game.players]
+
     is_main_player = game.current_player == game.main_player
     emit('update_cards', {
         "display_cards": Game.dict_repr(game.main_player.hand),
@@ -30,7 +32,9 @@ def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.tr
         "center_cards": trick_cards,
         "player_name": game.current_player.name,
         "player_score": game.current_player.score,
-        "is_main_player": is_main_player 
+        "is_main_player": is_main_player,
+        "banner": game.banner,
+        "player_scores": player_scores 
     }, broadcast=True)
 
 @app.route('/')

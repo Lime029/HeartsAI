@@ -16,6 +16,41 @@
             color: white;
         }
 
+        #player-scores-box {
+            position: fixed;
+            top: 120px;  
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            color: black;
+            width: min;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            font-family: sans-serif;
+        }
+
+        .player-score-item {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        #game-banner {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 123, 255, 0.8); 
+            color: white;
+            font-size: 24px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            z-index: 10;
+        }
+
         #center-cards {
             display: flex;
             justify-content: center;
@@ -99,7 +134,7 @@
             position: fixed;
             top: 20px;
             left: 20px;
-            background-color: rgb(255, 230, 230);
+            background-color: rgb(255, 240, 240);
             padding: 10px;
             border-radius: 5px;
             box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
@@ -122,6 +157,8 @@
     </style>
 </head>
 <body>
+    <div id="game-banner"></div>
+
     <div class="btn-container">
         <button class="btn" id="new-cards-btn">Get New Cards</button>
         <button class="btn" id="mcts-btn">Decide via MCTS</button>
@@ -132,8 +169,14 @@
 
     <div id="player-info">
         <div id="player-name"></div>
-        <div id="player-score"></div>
+        <div style="display:none" id="player-score"></div>
     </div>
+
+    <div id="player-scores-box">
+        <h3 style="font-size:25px; margin-top:0%; margin-bottom:10%;">Scores</h3>
+        <div id="player-scores-list"></div>
+    </div>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -151,6 +194,9 @@
 
             const playerNameElement = document.getElementById('player-name');
             const playerScoreElement = document.getElementById('player-score');
+            const gameBanner = document.getElementById('game-banner');
+            const playerScoresBox = document.getElementById('player-scores-box');
+            const playerScoresList = document.getElementById('player-scores-list');
 
             if (!playerNameElement || !playerScoreElement) {
                 console.error("Player name or score element not found.");
@@ -204,6 +250,28 @@
                 document.getElementById('mcts-btn').click();
             }, delay);
         }
+
+        gameBanner.textContent = data.banner || ''; 
+                if (data.banner) {
+                    gameBanner.style.display = 'block';
+                } else {
+                    gameBanner.style.display = 'none';
+                }
+
+                playerScoresList.innerHTML = '';  
+                data.player_scores.forEach(function(player) {
+                    let playerScoreItem = document.createElement('div');
+                    playerScoreItem.classList.add('player-score-item');
+                    playerScoreItem.textContent = `${player.name}: ${player.score}`;
+                    playerScoresList.appendChild(playerScoreItem);
+                });
+
+                if (data.player_scores && data.player_scores.length > 0) {
+                    playerScoresBox.style.display = 'block';
+                } else {
+                    playerScoresBox.style.display = 'none';
+                }
+
         });
     });
     </script>
