@@ -10,6 +10,16 @@ from State import State
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+def emit_game_state():
+    """Emit the current game state to all clients."""
+    trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
+    emit('update_cards', {
+        "player_cards": Game.dict_repr(game.current_player.hand),
+        "center_cards": trick_cards,
+        "player_name": game.current_player.name,
+        "player_score": game.current_player.score
+    }, broadcast=True)
+
 game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
 
 @app.route('/')
@@ -19,9 +29,8 @@ def index():
 @socketio.on('connect')
 def send_initial_cards():
     """Send player cards and center cards on connection."""
-    trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
-    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards})
-    emit('update_player', {"player_name": game.current_player.name})
+    emit_game_state()
+
 
 @socketio.on('play_card')
 def play_card(card):
@@ -34,16 +43,16 @@ def play_card(card):
         trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
         game.play_card(card)
         trick_cards.append(Game.dict_repr(card))
-        emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
-        emit('update_player', {"player_name": game.current_player.name})
+        emit_game_state()
+
 
 @socketio.on('get_new_cards')
 def get_new_cards():
     """Generates a new game."""
     global game
     game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
-    trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
-    emit('update_cards', {"player_cards": Game.dict_repr(game.current_player.hand), "center_cards": trick_cards}, broadcast=True)
+    emit_game_state()
+
 
 @socketio.on('run_mcts')
 def run_mcts():
