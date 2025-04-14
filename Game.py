@@ -44,6 +44,8 @@ class Game:
         for p in self.players:
             p.score += p.round_score
         if shot_moon:
+            if self.verbose:
+                print(f"Player {self.current_player.index} shot the moon")
             for p in self.players:
                 # +26 for everyone who didn't shoot, 0 at most for shooter
                 if p.round_score <= 0:
@@ -57,6 +59,8 @@ class Game:
                 print(f"{p.name} now has {p.score} points.")
         
         if not self.is_game_over():
+            if self.verbose:
+                print("Round scores", round_scores)
             self.round += 1
             self.new_round()
         elif self.verbose:
@@ -122,8 +126,8 @@ class Game:
         self.current_player = winner
 
         if self.verbose:
-            print(f"{winner.name} won the trick and received {points} points.")
-        
+            print(f"Trick winner: {winner.name}\t Points: {points}")
+            print("Current scores", [player.round_score for player in self.players])
         if len(self.current_player.hand) == 0:
             self.resolve_round()
 

@@ -38,7 +38,7 @@ class ISMCTS:
             self.children.append(c)
             return c
 
-        def update(self, terminal_state):
+        def update(self, terminal_state: State):
             """increases visits by 1 and updates wins according to the terminal state"""
             self.visits += 1
             if self.just_moved is not None:
@@ -77,7 +77,7 @@ class ISMCTS:
     def __init__(self, player_idx):
         self.player_idx = player_idx
 
-    def run(self, root_state, iters, verbose=False):
+    def run(self, root_state: State, iters, verbose=False):
         root = ISMCTS.Node()
         for _ in range(iters):
             #print(f"starting iteration {i}")
@@ -119,7 +119,7 @@ class ISMCTS:
 
         if verbose:
             print(root.TreeToString(0))
-        else:
-            print(root.ChildrenToString())
+        # else:
+        #     print(root.ChildrenToString())
 
         return max(root.children, key=lambda c: c.visits).move

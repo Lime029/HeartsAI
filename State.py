@@ -1,11 +1,11 @@
 from copy import deepcopy
 import random
-
+from Game import Game
 
 class State:
     """A class representing the game state, for MCTS. Normally, this would be an abstract class, but we only have one game."""
 
-    def __init__(self, game):
+    def __init__(self, game: Game):
         self.game = deepcopy(game) #maybe don't need to copy
         self.game.verbose = False
         self.n_players = 4  # assuming 4 players for now
