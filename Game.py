@@ -141,8 +141,10 @@ class Game:
     def random_legal_move(self):
         p = self.current_player
         if len(self.trick) == 0:
+            if Card("Clubs", "2") in p.hand:
+                move = p.hand[p.hand.index(Card('Clubs', '2'))]
             # player is leading, can play anything except possibly hearts
-            if self.hearts_broken or all(c.suit == "Hearts" for c in p.hand):
+            elif self.hearts_broken or all(c.suit == "Hearts" for c in p.hand):
                 move = random.choice(p.hand)
             else:
                 move = random.choice([c for c in p.hand if c.suit != "Hearts"])
