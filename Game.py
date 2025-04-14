@@ -58,6 +58,7 @@ class Game:
             for p in self.players:
                 print(f"{p.name} now has {p.score} points.")
         
+        round_scores = [player.round_score for player in self.players]
         if not self.is_game_over():
             if self.verbose:
                 print("Round scores", round_scores)
@@ -65,6 +66,7 @@ class Game:
             self.new_round()
         elif self.verbose:
             print(f"Game ended because someone got {self.max_score} points.")
+        return round_scores
 
     def play_card(self, card):
         """Current player attempts to play a card."""
@@ -81,7 +83,7 @@ class Game:
             print(f"{self.current_player.name} played {card.rank} of {card.suit}.")
 
         if len(self.trick) == 4:  # Trick complete
-            self.resolve_trick()
+            return self.resolve_trick()
         else:
             self.current_player = self.players[(self.current_player.index + 1) % len(self.players)]
 
@@ -129,7 +131,7 @@ class Game:
             print(f"Trick winner: {winner.name}\t Points: {points}")
             print("Current scores", [player.round_score for player in self.players])
         if len(self.current_player.hand) == 0:
-            self.resolve_round()
+            return self.resolve_round()
 
     def is_game_over(self):
         """Check if any player has reached the max points."""
