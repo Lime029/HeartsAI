@@ -50,7 +50,7 @@ def generate_training_data(model : DQN, epoch : int) -> list:
     map = Map()
     epsilon = 0.4
 
-    for simulated_game in range (50):
+    for simulated_game in range (5000):
         game = Game(player_names=["Agent", "P1", "P2", "P3"], max_score=25, verbose=False)
         cards_seen = np.zeros(shape=(52))
         current_trick_cards = []
@@ -116,7 +116,7 @@ def generate_training_data(model : DQN, epoch : int) -> list:
                     next_state = State(hand=hand, cards_seen=cards_seen, game=copy.deepcopy(game))
 
                     # Create a Memory
-                    memory = Memory(current_state=current_state, reward=reward, action=agent_action, next_state=next_state)
+                    memory = Memory(current_state=current_state, reward=-reward, action=agent_action, next_state=next_state)
                     replay_memory.append(memory)
                     
                 else:
@@ -191,7 +191,7 @@ def learn():
         replay_memory = generate_training_data(model=model, epoch=epoch)
         '''with open("random_replay_memory", 'rb') as f:
            replay_memory = pickle.load(f)'''
-        replay_memory = random.sample(replay_memory, 10)
+        replay_memory = random.sample(replay_memory, 1000)
 
         # calculate the label for each sample 
         # label y = sample_reward + gamma * next_action_max_q_val
