@@ -13,7 +13,7 @@ import pandas as pd
 import random
 import numpy as np
 from tqdm import tqdm
-
+import argparse
 class Random_Player():
     def __init__(self, game: Game):
         self.__game = game
@@ -112,7 +112,7 @@ class DQN_Player():
             self.current_trick_cards = []
         return card
 
-def ISMCTS_vs_RandomAgent(num_games=10):
+def ISMCTS_vs_RandomAgent(num_games=10, iters=100, max_score=50):
     """
     Run 1000 simulations of the game and save them in a dataframe.
     """
@@ -124,10 +124,10 @@ def ISMCTS_vs_RandomAgent(num_games=10):
     random_rwins = 0
     # Run 1000 games
     for i in tqdm(range(num_games)):
-        game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=100, verbose=False)
+        game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=max_score, verbose=False)
 
         # Evaluate ISMCTS against random agents
-        ismcts_player = ISMCTS_Player(player_idx=0, game=game, iters=100);
+        ismcts_player = ISMCTS_Player(player_idx=0, game=game, iters=iters);
         random_player = Random_Player(game)
         players = [ismcts_player, random_player, random_player, random_player]
         last_round = 0
@@ -164,7 +164,7 @@ def ISMCTS_vs_RandomAgent(num_games=10):
     df.to_csv("ISMCTS_vs_Random.csv", index=False)
     return df
 
-def DQN_vs_RandomAgent(num_games=10):
+def DQN_vs_RandomAgent(num_games=10, max_score=50):
     """
     Run 1000 simulations of the game and save them in a dataframe.
     """
@@ -176,7 +176,7 @@ def DQN_vs_RandomAgent(num_games=10):
     random_rwins = 0
     # Run 1000 games
     for i in tqdm(range(num_games)):
-        game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=100, verbose=False)
+        game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=max_score, verbose=False)
 
         # Evaluate dqn against random agents
         dqn_player = DQN_Player(game=game);
@@ -216,7 +216,7 @@ def DQN_vs_RandomAgent(num_games=10):
     df.to_csv("DQN_vs_Random.csv", index=False)
     return df
 
-def DQN_vs_ISMCTS(num_games=10):
+def DQN_vs_ISMCTS(num_games=10, iters=100, max_score=50):
     """
     Run 1000 simulations of the game and save them in a dataframe.
     """
@@ -232,10 +232,10 @@ def DQN_vs_ISMCTS(num_games=10):
     random2_rwins = 0
     # Run 1000 games
     for i in tqdm(range(num_games)):
-        game = Game(["ISMCTS", "DQN", "R1", "R2"], max_score=100, verbose=False)
+        game = Game(["ISMCTS", "DQN", "R1", "R2"], max_score=max_score, verbose=False)
 
         # Evaluate dqn against random agents
-        ismcts_player = ISMCTS_Player(player_idx=0, game=game, iters=100);
+        ismcts_player = ISMCTS_Player(player_idx=0, game=game, iters=iters);
         dqn_player = DQN_Player(game=game);
         random_player = Random_Player(game)
         players = [ismcts_player, dqn_player, random_player, random_player]
@@ -291,13 +291,13 @@ def DQN_vs_ISMCTS(num_games=10):
     df.to_csv("DQN_vs_Random.csv", index=False)
     return df
 
-def RandomAgent_vs_RandomAgent(num_games=10):
+def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
     rows = []
     random_wins = 0
     random_rwins = 0
     # Run 1000 games
     for i in tqdm(range(num_games)):
-        game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=100, verbose=False)
+        game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=max_score, verbose=False)
 
         # Evaluate random against random agents for a baseline
         random_player = Random_Player(game)
@@ -329,7 +329,18 @@ def RandomAgent_vs_RandomAgent(num_games=10):
     return df
 
 if __name__ == "__main__":
-    # ISMCTS_vs_RandomAgent(1000)
-    # DQN_vs_RandomAgent(1000)
-    # RandomAgent_vs_RandomAgent(1000)
-    DQN_vs_ISMCTS(1000)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-algo', choices=['dqn', 'ismcts', 'random', 'both'], default='dqn')
+    parser.add_argument('-max_score', help="Determines the max_score used for a game of Hearts", default=50)
+    parser.add_argument('-iters', help="Determines the number of iterations used for ISMCTS", default=100)
+    parser.add_argument('-num_games', help="Determines the number of games with the agent", default=100)
+    args = parser.parse_args()
+    
+    if args.algo == 'dqn':
+        DQN_vs_RandomAgent(num_games=args.num_games, max_score=args.max_score)
+    if args.algo == 'ismcts':
+        ISMCTS_vs_RandomAgent(num_games=args.num_games, iters=args.iters, max_score=args.max_score)
+    if args.algo == 'random':
+        RandomAgent_vs_RandomAgent(num_games=args.num_games, max_score=args.max_score)
+    if args.algo == 'both':
+        DQN_vs_ISMCTS(num_games=args.num_games, iters=args.iters, max_score=args.max_score)
