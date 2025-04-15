@@ -42,7 +42,7 @@ class Game:
         # Set proper scores
         shot_moon = any(p.shooting_moon for p in self.players)
         # Save round scores to return for analysis
-        round_scores = []
+        round_scores = [player.round_score for player in self.players]
         
         for p in self.players:
             p.score += p.round_score
