@@ -223,8 +223,7 @@ def DQN_vs_RandomAgent(num_games=10, max_score=50):
             move = players[game.current_player.index].run()
             round_scores = game.play_card(move)
             
-            if(round_scores is not None):    # A new trick just started
-                print(round_scores)
+            if(round_scores is not None):    #
                 player_round_score = round_scores[0]
                 unsorted_scores = round_scores
                 round_scores = sorted(round_scores, reverse=True)
@@ -370,8 +369,6 @@ def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
     # Run 1000 games
     for i in tqdm(range(num_games)):
         game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=max_score, verbose=False)
-        for p in players:
-            p.new_game(game)
 
         # Evaluate random against random agents for a baseline
         random_player = Random_Player(game)
