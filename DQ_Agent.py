@@ -232,4 +232,5 @@ def learn():
         pickle.dump(model, file)
     print(f"Model successfully pickled")
 
-learn()
+if __name__ == "__main__":
+    learn()
