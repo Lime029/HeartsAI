@@ -432,9 +432,9 @@ def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--algo', choices=['dqn', 'ismcts', 'random', 'both'], default='dqn')
-    parser.add_argument('--max_score', help="Determines the max_score used for a game of Hearts", default=50)
-    parser.add_argument('--iters', help="Determines the number of iterations used for ISMCTS", default=100)
-    parser.add_argument('--num_games', help="Determines the number of games with the agent", default=100)
+    parser.add_argument('--max_score', help="Determines the max_score used for a game of Hearts", default=100, type=int)
+    parser.add_argument('--iters', help="Determines the number of iterations used for ISMCTS", default=100, type=int)
+    parser.add_argument('--num_games', help="Determines the number of games with the agent", default=100, type=int)
     args = parser.parse_args()
     
     if args.algo == 'dqn':
