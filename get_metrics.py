@@ -13,7 +13,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-import argparse
+import argparse 
+import pickle
 
 class Random_Player():
     def __init__(self, game: Game, player_idx=0, iters=50, verbose=False):
