@@ -10,10 +10,11 @@ import torch as T
 from Map import Map
 
 import pandas as pd
-import random
+import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 import argparse
+
 class Random_Player():
     def __init__(self, game: Game, player_idx=0, iters=50, verbose=False):
         self.__game = game
@@ -283,10 +284,10 @@ def DQN_vs_ISMCTS(num_games=10, iters=100, max_score=50):
     ismcts_wins = 0
     ismcts_rwins = 0
 
-    random1_wins = 0
-    random1_rwins = 0
-    random2_wins = 0
-    random2_rwins = 0
+    random3_wins = 0
+    random3_rwins = 0
+    random4_wins = 0
+    random4_rwins = 0
     # Run 1000 games
     for i in tqdm(range(num_games)):
         game = Game(["ISMCTS", "DQN", "R1", "R2"], max_score=max_score, verbose=False)
@@ -353,7 +354,7 @@ def DQN_vs_ISMCTS(num_games=10, iters=100, max_score=50):
                 last_round = game.round
 
     df = pd.DataFrame(rows)
-    df.to_csv("DQN_vs_Random.csv", index=False)
+    df.to_csv("DQN_vs_ISMCTS.csv", index=False)
     return df
 
 def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
@@ -426,19 +427,87 @@ def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
     df.to_csv("Random_vs_Random.csv", index=False)
     return df
 
+def plot_data(agent):
+    # 1) Read the CSV into a DataFrame
+    if agent == 'ismcts':
+        df = pd.read_csv("ISMCTS_vs_Random.csv")
+    elif agent == 'dfn':
+        df = pd.read_csv("DFN_vs_Random.csv")
+    elif agent == 'both':
+        df = pd.read_csv("DFN_vs_ISMCTS.csv")
+    elif agent == 'random':
+        df = pd.read_csv("Random_vs_Random.csv")
+
+    # --------------------------------------------------------------------
+    # 2) Plot current score vs. round for each player
+
+    plt.figure()  # separate figure
+    df_avg = df.groupby(["player", "round"])["current_score"].mean().reset_index()
+    for player, group_data in df_avg.groupby("player"):
+        plt.plot(group_data["round"], group_data["current_score"], marker='o', label=player)
+
+    plt.xlabel("Round")
+    plt.ylabel("Current Score")
+    plt.title("Current Score vs. Round (by Player)")
+    plt.legend()
+    plt.show()
+
+    # --------------------------------------------------------------------
+    # 3) Compute and plot win percentage (assuming `round_wins` is 0 or 1 per row)
+
+    win_percentage = df.loc["player"]["round_wins"][-1]  # average of 0/1 = % of wins
+    # Plot as a bar chart
+    plt.figure()
+    win_percentage.plot(kind="bar")
+    plt.xlabel("Player")
+    plt.ylabel("Win Percentage (Round Wins)")
+    plt.title("Win Percentage of Each Player")
+    plt.xticks(rotation=0)
+    plt.show()
+
+    # --------------------------------------------------------------------
+    # 4) Compute and plot average total score (by player)
+    # Here "total score" is assumed to be your "current_score" column on each row
+
+    avg_score = df.groupby("player")["current_score"].mean()
+
+    plt.figure()
+    avg_score.plot(kind="bar")
+    plt.xlabel("Player")
+    plt.ylabel("Average Score")
+    plt.title("Average Total Score (by Player)")
+    plt.xticks(rotation=0)
+    plt.show()
+
+    # --------------------------------------------------------------------
+    # 6) Compute and plot each player's average placement
+
+    avg_placement = df.groupby("player")["placement"].mean()
+
+    plt.figure()
+    avg_placement.plot(kind="bar")
+    plt.xlabel("Player")
+    plt.ylabel("Average Placement")
+    plt.title("Average Placement (by Player)")
+    plt.xticks(rotation=0)
+    plt.show()
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--algo', choices=['dqn', 'ismcts', 'random', 'both'], default='dqn')
+    parser.add_argument('--algo', choices=['dqn', 'ismcts', 'random', 'both'])
     parser.add_argument('--max_score', help="Determines the max_score used for a game of Hearts", default=100, type=int)
     parser.add_argument('--iters', help="Determines the number of iterations used for ISMCTS", default=100, type=int)
     parser.add_argument('--num_games', help="Determines the number of games with the agent", default=100, type=int)
+    parser.add_argument('--graph', action='store_true',help="Determines the number of games with the agent", default=False)
     args = parser.parse_args()
     
-    if args.algo == 'dqn':
+    if args.graph:
+        plot_data(args.algo)
+    elif args.algo == 'dqn':
         DQN_vs_RandomAgent(num_games=args.num_games, max_score=args.max_score)
-    if args.algo == 'ismcts':
+    elif args.algo == 'ismcts':
         ISMCTS_vs_RandomAgent(num_games=args.num_games, iters=args.iters, max_score=args.max_score)
-    if args.algo == 'random':
+    elif args.algo == 'random':
         RandomAgent_vs_RandomAgent(num_games=args.num_games, max_score=args.max_score)
-    if args.algo == 'both':
+    elif args.algo == 'both':
         DQN_vs_ISMCTS(num_games=args.num_games, iters=args.iters, max_score=args.max_score)
