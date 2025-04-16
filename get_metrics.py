@@ -13,7 +13,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-import argparse, copy
+import argparse, copy 
+import pickle
 
 class Random_Player():
     def __init__(self, game: Game, player_idx=0, iters=50, verbose=False):
@@ -92,7 +93,8 @@ class DQN_Player():
         # Determined by 1 - epsilon greedy exploration
         r = bernoulli.rvs(1 - self.epsilon)
         if r == 1:
-            card = Card(suit=best_card[1], rank=best_card[0])
+            #card = Card(suit=best_card[1], rank=best_card[0]) 
+            card = self.__game.deck.get_card(rank = best_card[0], suit = best_card[1])
         elif r == 0 or not self.__game.is_valid_card(card):
             # Random action
             card = self.__game.random_legal_move()
