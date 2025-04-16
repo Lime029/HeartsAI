@@ -26,9 +26,9 @@ for i in range(num_hands):
     # Store scores at the end of the hand
     for p in game.players:
         if p.index == mcts_idx:
-            mcts_scores.append(p.score)
+            mcts_scores.append(p.round_score)
         else:
-            random_scores[p.index if p.index < mcts_idx else p.index - 1].append(p.score)
+            random_scores[p.index if p.index < mcts_idx else p.index - 1].append(p.round_score)
 
 # Compute average scores
 print("\nSimulation Results:")
@@ -62,6 +62,6 @@ while not game.is_game_over() and game.current_player.hand != []:
 
 print("Hand is over. Scores:")
 for p in game.players:
-    print(f"{p.name}: {p.score}")
+    print(f"{p.name}: {p.round_score}")
 print("")
 """
