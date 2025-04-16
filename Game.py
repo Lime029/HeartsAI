@@ -4,15 +4,13 @@ from Player import Player
 import random
 
 class Game:
-    def __init__(self, player_names, max_score, verbose=True):
+    def __init__(self, player_names, max_score, verbose=False, jack_diamonds=True):
         self.players = [Player(i,name) for i,name in enumerate(player_names)]
         self.max_score = max_score
-        self.deck = Deck()
-        self.deal_cards()
-        self.trick = [] # Caution: A list of pairs (playerIndex, card)
-        self.hearts_broken = False
-        self.current_player = self.find_starting_player()
         self.verbose = verbose
+        self.jack_diamonds = jack_diamonds
+        self.round = 0
+        self.new_round()
         self.main_player = self.players[0]
         self.banner = "Welcome to Hearts AI"
 
@@ -29,21 +27,53 @@ class Game:
                 if card.suit == "Clubs" and card.rank == "2":
                     return player
         raise ValueError("Nobody has the 2 of clubs.")
+    
+    def new_round(self):
+        """Deals out a new hand and starts play again."""
+        for p in self.players:
+            p.round_score = 0
+            p.shooting_moon = True
+        
+        self.deck = Deck()
+        self.deal_cards()
+        self.trick = [] # Caution: A list of pairs (playerIndex, card)
+        self.hearts_broken = False
+        self.current_player = self.find_starting_player()
+
+    def resolve_round(self):
+        # Set proper scores
+        shot_moon = any(p.shooting_moon for p in self.players)
+        for p in self.players:
+            p.score += p.round_score
+        if shot_moon:
+            if self.verbose:
+                print(f"Player {self.current_player.index} shot the moon")
+            for p in self.players:
+                # +26 for everyone who didn't shoot, 0 at most for shooter
+                if p.round_score <= 0:
+                    p.score += 26
+                else: # This is the shooter
+                    p.score -= 26
+        
+        if self.verbose:
+            print(f"Round {self.round} ended.")
+            for p in self.players:
+                print(f"{p.name} now has {p.score} points.")
+        
+        round_scores = [player.round_score for player in self.players]
+        if not self.is_game_over():
+            if self.verbose:
+                print("Round scores", round_scores)
+            self.round += 1
+            self.new_round()
+        elif self.verbose:
+            print(f"Game ended because someone got {self.max_score} points.")
+        return round_scores
 
     def play_card(self, card):
         """Current player attempts to play a card."""
-        if card not in self.current_player.hand:
-            raise ValueError("Invalid move: You don't have that card.")
-
-        if len(self.trick) == 0: # Starting trick with this card
-            if card.suit == 'Hearts' and not self.hearts_broken and self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
-                raise ValueError("Invalid move: Hearts have not been broken.")
-            trick_suit = card.suit
-        else:
-            trick_suit = self.trick[0][1].suit
-
-        if card.suit != trick_suit and self.current_player.has_any(trick_suit):
-            raise ValueError("Invalid move: You must follow the suit if possible.")
+        if not self.is_valid_card(card):
+            raise ValueError("Invalid card played.")
 
         self.current_player.hand.remove(card)
         self.trick.append((self.current_player.index, card))
@@ -55,7 +85,7 @@ class Game:
             print(f"{self.current_player.name} played {card.rank} of {card.suit}.")
 
         if len(self.trick) == 4:  # Trick complete
-            self.resolve_trick()
+            return self.resolve_trick()
         else:
             self.current_player = self.players[(self.current_player.index + 1) % len(self.players)]
 
@@ -64,7 +94,10 @@ class Game:
             return False
 
         if len(self.trick) == 0: # Starting trick with this card
-            if card.suit == 'Hearts' and not self.hearts_broken and not self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
+            if len(self.current_player.hand) == 13: # Starting the round (must be 2 of clubs)
+                if not (card.suit == 'Clubs' and card.rank == '2'):
+                    return False
+            elif card.suit == 'Hearts' and not self.hearts_broken and self.current_player.has_any('Diamonds', 'Clubs', 'Spades'):
                 return False
             trick_suit = card.suit
         else:
@@ -84,14 +117,24 @@ class Game:
         # Calculate points
         points = sum(1 for _, c in self.trick if c.suit == 'Hearts')
         points += 13 if Card("Spades", "Q") in [c for _, c in self.trick] else 0
+        if points > 0:
+            # No other player besides winner can now shoot the moon
+            for p in self.players:
+                if p.index != winner.index:
+                    p.shooting_moon = False
+        if self.jack_diamonds: # Not required to shoot moon
+            points -= 10 if Card("Diamonds", "J") in [c for _, c in self.trick] else 0
 
-        winner.score += points
+        winner.round_score += points
         self.trick = []
         self.current_player = winner
 
         if self.verbose:
             self.banner = f"{winner.name} won the trick!"
-            print(f"{winner.name} won the trick and received {points} points.")
+            print(f"Trick winner: {winner.name}\t Points: {points}")
+            print("Current scores", [player.round_score for player in self.players])
+        if len(self.current_player.hand) == 0:
+            return self.resolve_round()
 
     def is_game_over(self):
         """Check if any player has reached the max points."""
@@ -103,8 +146,10 @@ class Game:
     def random_legal_move(self):
         p = self.current_player
         if len(self.trick) == 0:
+            if Card("Clubs", "2") in p.hand:
+                move = p.hand[p.hand.index(Card('Clubs', '2'))]
             # player is leading, can play anything except possibly hearts
-            if self.hearts_broken or all(c.suit == "Hearts" for c in p.hand):
+            elif self.hearts_broken or all(c.suit == "Hearts" for c in p.hand):
                 move = random.choice(p.hand)
             else:
                 move = random.choice([c for c in p.hand if c.suit != "Hearts"])

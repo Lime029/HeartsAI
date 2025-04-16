@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Hearts Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
     <style>
@@ -68,7 +70,15 @@
         .card {
             width: 100px;
             height: 150px;
+            width: 100px;
+            height: 150px;
             border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -78,9 +88,27 @@
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
             background-color: white;
             border: 1px solid #000;
+            background-color: white;
+            border: 1px solid #000;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
         }
+
+        .red { color: red; }
+        .black { color: black; }
+
+        .card:hover {
+            transform: scale(1.1);
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .rank {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 18px;
+        }
+
 
         .red { color: red; }
         .black { color: black; }
@@ -258,6 +286,7 @@
 
                 if (isPlayerCard) {
                     cardElement.style.cursor = "pointer";
+                    cardElement.onclick = function () { socket.emit('play_card', card); };
                     cardElement.onclick = function () { socket.emit('play_card', card); };
                 }
 

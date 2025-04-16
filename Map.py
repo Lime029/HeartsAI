@@ -3,7 +3,7 @@ import numpy as np
 class Map:
     def __init__(self):
         self.dict = {
-            1 : ['2' 'Hearts'],
+            1 : ['2', 'Hearts'],
             2 : ['3', 'Hearts'],
             3 : ['4', 'Hearts'],
             4 : ['5', 'Hearts'],
@@ -16,7 +16,7 @@ class Map:
             11 : ['Q', 'Hearts'],
             12 : ['K', 'Hearts'],
             13 : ['A', 'Hearts'],
-            14 : ['2' 'Diamonds'],
+            14 : ['2', 'Diamonds'],
             15 : ['3', 'Diamonds'],
             16 : ['4', 'Diamonds'],
             17 : ['5', 'Diamonds'],
@@ -29,7 +29,7 @@ class Map:
             24 : ['Q', 'Diamonds'],
             25 : ['K', 'Diamonds'],
             26 : ['A', 'Diamonds'],
-            27 : ['2' 'Clubs'],
+            27 : ['2', 'Clubs'],
             28 : ['3', 'Clubs'],
             29 : ['4', 'Clubs'],
             30 : ['5', 'Clubs'],
@@ -42,7 +42,7 @@ class Map:
             37 : ['Q', 'Clubs'],
             38 : ['K', 'Clubs'],
             39 : ['A', 'Clubs'],
-            40 : ['2' 'Spades'],
+            40 : ['2', 'Spades'],
             41 : ['3', 'Spades'],
             42 : ['4', 'Spades'],
             43 : ['5', 'Spades'],
@@ -61,4 +61,5 @@ class Map:
         for k,v, in self.dict.items():
             if rank == v[0] and suit == v[1]:
                 return k - 1
+        return -1
 
