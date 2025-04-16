@@ -13,7 +13,9 @@ import pandas as pd
 import random
 import numpy as np
 from tqdm import tqdm
-import argparse
+import argparse 
+import pickle
+
 class Random_Player():
     def __init__(self, game: Game):
         self.__game = game
@@ -38,7 +40,10 @@ class ISMCTS_Player():
 
 class DQN_Player():
     def __init__(self, game: Game):
-        self.__model = DQN()
+        with open('model.pkl', 'rb') as file:
+            # Load the data from the pickle file
+            model = pickle.load(file)
+        self.__model = model
         self.__cards_seen = np.zeros(shape=(52))
         self.__current_trick_cards = []
         self.__game = game
