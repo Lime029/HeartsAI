@@ -1,53 +1,110 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 
+from threading import Timer
+
 from Player import Player
 from Game import Game
 from Card import Card
+from ISMCTS import ISMCTS
+from State import State
 
+debug = True
+
+print("Creating Flask app...")
 app = Flask(__name__)
+
+print("Initializing SocketIO...")
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100, True)
+print("Creating initial game state...")
+game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
+mcts_players = ["Meal","Shraf"]
+dq_players = ["Simi"]
 
-def emit_game_state():
+def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]):
     """Emit the current game state to all clients."""
-    trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
+    print("Emitting game state...")
+    print(trick_cards)
+
+    player_scores = [{"name": player.name, "score": player.score} for player in game.players]
+
+    is_main_player = game.current_player == game.main_player
+
+    if debug:
+        display = Game.dict_repr(game.current_player.hand)
+    else:
+        display = Game.dict_repr(game.main_player.hand)
+
     emit('update_cards', {
+        "display_cards": display,
         "player_cards": Game.dict_repr(game.current_player.hand),
         "center_cards": trick_cards,
         "player_name": game.current_player.name,
-        "player_score": game.current_player.score
+        "player_score": game.current_player.score,
+        "is_main_player": is_main_player,
+        "banner": game.banner,
+        "player_scores": player_scores,
+        "mcts_players": mcts_players,
+        "dq_players": dq_players,
     }, broadcast=True)
 
 @app.route('/')
 def index():
+    print("Serving index.html...")
     return render_template('index.html')
 
 @socketio.on('connect')
 def send_initial_cards():
     """Send player cards and center cards on connection."""
+    print("Client connected!")
     emit_game_state()
 
 @socketio.on('play_card')
 def play_card(card):
     """Move a played card from player cards to the center."""
     global game
+    print(f"Received card to play: {card}")
     card = game.deck.get_card(card['rank'], card['suit'])
-    print(game.current_player.name)
-    print(game.current_player.score)
-    # print(card)
-    # print(game.current_player.hand)
+    print(f"Converted card object: {card}")
+    print(f"Current player hand before play: {game.current_player.hand}")
     if card in game.current_player.hand:
+        trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]
         game.play_card(card)
-        emit_game_state()
+        trick_cards.append(Game.dict_repr(card))
+        print("Card played successfully.")
+        emit_game_state(trick_cards)
+    else:
+        print("Card not found in current player hand.")
 
 @socketio.on('get_new_cards')
 def get_new_cards():
     """Generates a new game."""
     global game
+    print("Received request to start new game.")
     game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
     emit_game_state()
 
+@socketio.on('run_mcts')
+def run_mcts():
+    global game
+    print("Running ISMCTS...")
+    mcts = ISMCTS(game.current_player.index)
+    s = State(game)
+    move = mcts.run(s, 1000, verbose=False)
+    print(f"ISMCTS chose move: {move}")
+    play_card(Game.dict_repr(move))
+
+@socketio.on('run_dq')
+def run_dq():
+    global game
+    print("Running DQ...")
+    mcts = ISMCTS(game.current_player.index)
+    s = State(game)
+    move = mcts.run(s, 1000, verbose=False)
+    print(f"DQ chose move: {move}")
+    play_card(Game.dict_repr(move))
+
 if __name__ == '__main__':
+    print("Starting Flask-SocketIO server...")
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

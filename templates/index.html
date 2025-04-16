@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Hearts Game</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
     <style>
@@ -14,6 +16,41 @@
             grid-template-rows: 1fr auto;
             background: green;
             color: white;
+        }
+
+        #player-scores-box {
+            position: fixed;
+            top: 120px;  
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            color: black;
+            width: min;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            font-family: sans-serif;
+        }
+
+        .player-score-item {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        #game-banner {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 123, 255, 0.8); 
+            color: white;
+            font-size: 24px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            z-index: 10;
         }
 
         #center-cards {
@@ -33,6 +70,8 @@
         .card {
             width: 100px;
             height: 150px;
+            width: 100px;
+            height: 150px;
             border-radius: 8px;
             display: flex;
             flex-direction: column;
@@ -40,7 +79,15 @@
             align-items: center;
             font-size: 24px;
             font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            background-color: white;
+            border: 1px solid #000;
             background-color: white;
             border: 1px solid #000;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -62,12 +109,34 @@
             font-size: 18px;
         }
 
+
+        .red { color: red; }
+        .black { color: black; }
+
+        .card:hover {
+            transform: scale(1.1);
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .rank {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 18px;
+        }
+
         .suit { font-size: 40px; }
 
-        #new-cards-btn {
+        .btn-container {
             position: fixed;
-            bottom: 20px;
+            top: 20px;
             right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Space between the buttons */
+        }
+
+        .btn {
             padding: 12px 18px;
             font-size: 16px;
             cursor: pointer;
@@ -84,12 +153,25 @@
             transform: scale(1.05);
         }
 
+        #mcts-btn:hover { 
+            background-color: #0056b3; 
+            transform: scale(1.05);
+        }
+
+        #dq-btn:hover { 
+            background-color: #0056b3; 
+            transform: scale(1.05);
+        }
+
         #player-info {
             position: fixed;
-            bottom: 20px;
+            top: 20px;
             left: 20px;
-            text-align: left;
-            color: rgb(255, 255, 114);
+            background-color: rgb(255, 240, 240);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            color: black;
         }
 
         #player-name {
@@ -100,10 +182,21 @@
         #player-score {
             font-size: 17px;
         }
+
+        .dimmed {
+            opacity: 0.5;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
-    <button id="new-cards-btn">Get New Cards</button>
+    <div id="game-banner"></div>
+
+    <div class="btn-container">
+        <button class="btn" id="new-cards-btn">Restart Game</button>
+        <button class="btn" id="mcts-btn">Decide via MCTS</button>
+        <button class="btn" id="dq-btn">Decide via DQ</button>
+    </div>
 
     <div id="center-cards"></div>
     <div id="player-cards"></div>
@@ -113,21 +206,75 @@
         <div id="player-score"></div>
     </div>
 
+    <div id="player-scores-box">
+        <h3 style="font-size:25px; margin-top:0%; margin-bottom:10%;">Scores</h3>
+        <div id="player-scores-list"></div>
+    </div>
+
+
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
         var socket = io();
 
         document.getElementById('new-cards-btn').addEventListener('click', function () {
             socket.emit('get_new_cards');
         });
 
+        document.getElementById('mcts-btn').addEventListener('click', function() {
+          socket.emit('run_mcts');
+        });
+
+        document.getElementById('dq-btn').addEventListener('click', function() {
+          socket.emit('run_dq');
+        });
+
         socket.on('update_cards', function (data) {
+
+            const playerNameElement = document.getElementById('player-name');
+            const playerTagElement = document.getElementById('player-score');
+            const gameBanner = document.getElementById('game-banner');
+            const playerScoresBox = document.getElementById('player-scores-box');
+            const playerScoresList = document.getElementById('player-scores-list');
+
+            // if (!playerNameElement || !playerScoreElement) {
+            //     console.error("Player name or score element not found.");
+            //     return; 
+            // }
+
             let playerDiv = document.getElementById('player-cards');
             let centerDiv = document.getElementById('center-cards');
             playerDiv.innerHTML = '';
             centerDiv.innerHTML = '';
 
-            document.getElementById('player-name').textContent = data.player_name;
-            document.getElementById('player-score').textContent = "Score: " + data.player_score;
+            playerNameElement.textContent = data.player_name;
+            // playerTagElement.textContent = "Score: " + data.player_score;
+
+            let tag = "";
+
+            if (data.dq_players.includes(data.player_name)) {
+                tag = "DQ";
+            } else if (data.mcts_players.includes(data.player_name)) {
+                tag = "MCTS";
+            } else if (data.player_name === data.player_name) {
+                tag = "Player";
+            }
+
+            playerTagElement.textContent = tag;
+
+
+            if (data.is_main_player) {
+                playerNameElement.style.color = '#007bff'; 
+                playerTagElement.style.color = '#007bff'; 
+            } else {
+                playerNameElement.style.color = '#ff3f3f';
+                playerTagElement.style.color = '#ff3f3f'; 
+            }
+
+            if (data.is_main_player) {
+                playerDiv.classList.remove('dimmed');
+            } else {
+                playerDiv.classList.add('dimmed');
+            }
 
             function createCardElement(card, isPlayerCard) {
                 let cardElement = document.createElement('div');
@@ -140,14 +287,61 @@
                 if (isPlayerCard) {
                     cardElement.style.cursor = "pointer";
                     cardElement.onclick = function () { socket.emit('play_card', card); };
+                    cardElement.onclick = function () { socket.emit('play_card', card); };
                 }
 
                 return cardElement;
             }
 
-            data.player_cards.forEach(card => playerDiv.appendChild(createCardElement(card, true)));
+            data.display_cards.forEach(card => playerDiv.appendChild(createCardElement(card, true)));
             data.center_cards.forEach(card => centerDiv.appendChild(createCardElement(card, false)));
+
+            if (!data.is_main_player && data.mcts_players.includes(data.player_name)) {
+            const delay = 800 + Math.random() * 600;
+            setTimeout(() => {
+                document.getElementById('mcts-btn').click();
+            }, delay);
+        }
+
+        if (!data.is_main_player && data.dq_players.includes(data.player_name)) {
+            const delay = 800 + Math.random() * 600;
+            setTimeout(() => {
+                document.getElementById('dq-btn').click();
+            }, delay);
+        }
+
+        gameBanner.textContent = data.banner || ''; 
+                if (data.banner) {
+                    gameBanner.style.display = 'block';
+                } else {
+                    gameBanner.style.display = 'none';
+                }
+
+            playerScoresList.innerHTML = '';  
+            data.player_scores.forEach(function(player) {
+            let playerScoreItem = document.createElement('div');
+            playerScoreItem.classList.add('player-score-item');
+
+            let tags = [];
+            if (data.mcts_players.includes(player.name)) tags.push("MCTS");
+            if (data.dq_players.includes(player.name)) tags.push("DQ");
+
+            let tagText = tags.length > 0 ? ` (${tags.join(", ")})` : "";
+
+            playerScoreItem.innerHTML = `<strong>${player.name}</strong>${tagText}: ${player.score}`;
+            playerScoresList.appendChild(playerScoreItem);
         });
+
+        if (data.player_scores && data.player_scores.length > 0) {
+            playerScoresBox.style.display = 'block';
+        } else {
+            playerScoresBox.style.display = 'none';
+        }
+
+
+
+        });
+    });
     </script>
 </body>
 </html>

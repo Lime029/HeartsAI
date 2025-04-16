@@ -11,6 +11,8 @@ class Game:
         self.jack_diamonds = jack_diamonds
         self.round = 0
         self.new_round()
+        self.main_player = self.players[0]
+        self.banner = "Welcome to Hearts AI"
 
     def deal_cards(self):
         """Deal 13 cards to each player."""
