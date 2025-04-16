@@ -35,16 +35,19 @@ class ISMCTS_Player():
     def run(self):
         # Temporarily turn off game verbosity as MCTS runs
         self.__game.verbosity = False
-        temp = self.__ismcts.run(State(self.__game), self.__iters, verbose=self.__verbose)
+        card = self.__ismcts.run(State(self.__game), self.__iters, verbose=self.__verbose)
         self.__game.verbosity = self.__game_verbosity
-        return temp
+        return card
     
     def new_game(self, game):
         self.__game = game
 
+import pickle
 class DQN_Player():
     def __init__(self, game: Game, player_idx=0, iters=50, verbose=False):
-        self.__model = DQN()
+        with open('model', 'rb') as file:
+            self.__model = pickle.load(file)
+
         self.__cards_seen = np.zeros(shape=(52))
         self.__current_trick_cards = []
         self.__game = game
@@ -64,6 +67,8 @@ class DQN_Player():
         self.__cards_seen = np.zeros(shape=(52))
         self.__current_trick_cards = []
 
+    def update(self, card: Card):
+        self.__cards_seen[self.__map.get_index(card.rank, card.suit)] = 1
 
     def run(self):
         # Note the agent's hand before playing the card
@@ -193,7 +198,7 @@ def ISMCTS_vs_RandomAgent(num_games=10, iters=100, max_score=50):
                 last_round = game.round
 
     df = pd.DataFrame(rows)
-    df.to_csv("ISMCTS_vs_Random.csv", index=False)
+    df.to_csv("ISMCTS_Relative_Scoring_vs_Random.csv", index=False)
     return df
 
 def DQN_vs_RandomAgent(num_games=10, max_score=50):
@@ -224,6 +229,8 @@ def DQN_vs_RandomAgent(num_games=10, max_score=50):
             move = players[game.current_player.index].run()
             round_scores = game.play_card(move)
             
+            dqn_player.update(move)
+
             if(round_scores is not None):    #
                 player_round_score = round_scores[0]
                 unsorted_scores = round_scores
@@ -253,14 +260,14 @@ def DQN_vs_RandomAgent(num_games=10, max_score=50):
                     rows[-1]['last_trick'] = True
                     if min([player.score for player in game.players]) == game.players[0].score:
                         dqn_wins = dqn_wins + 1
-                        rows[-2]['game_wins'] = dqn_wins
+                        rows[-4]['game_wins'] = dqn_wins
                     if min([player.score for player in game.players]) == game.players[1].score:
                         random2_wins = random2_wins + 1
-                        rows[-2]['game_wins'] = random2_wins
+                        rows[-3]['game_wins'] = random2_wins
 
                     if min([player.score for player in game.players]) == game.players[2].score:
                         random3_wins = random3_wins + 1
-                        rows[-1]['game_wins'] = random3_wins
+                        rows[-2]['game_wins'] = random3_wins
 
                     if min([player.score for player in game.players]) == game.players[3].score:
                         random4_wins = random4_wins + 1
@@ -303,6 +310,7 @@ def DQN_vs_ISMCTS(num_games=10, iters=100, max_score=50):
             move = players[game.current_player.index].run()
             round_scores = game.play_card(move)
             
+            dqn_player.update(move)
             if(round_scores is not None):    # A new trick just started
                 ismcts_round_score = round_scores[0]
                 dqn_round_score = round_scores[1]
@@ -431,11 +439,11 @@ def plot_data(agent):
     # 1) Read the CSV into a DataFrame
     if agent == 'ismcts':
         df = pd.read_csv("ISMCTS_vs_Random.csv")
-    elif agent == 'dfn':
-        df = pd.read_csv("DFN_vs_Random.csv")
+    elif agent == 'dqn':
+        df = pd.read_csv("DQN_vs_Random.csv")
     elif agent == 'both':
-        df = pd.read_csv("DFN_vs_ISMCTS.csv")
-    elif agent == 'random':
+        df = pd.read_csv("DQN_vs_ISMCTS.csv")
+    else:
         df = pd.read_csv("Random_vs_Random.csv")
 
     # --------------------------------------------------------------------
@@ -455,7 +463,7 @@ def plot_data(agent):
     # --------------------------------------------------------------------
     # 3) Compute and plot win percentage (assuming `round_wins` is 0 or 1 per row)
 
-    win_percentage = df.loc["player"]["round_wins"][-1]  # average of 0/1 = % of wins
+    win_percentage = df.groupby("player")["round_wins"].max()
     # Plot as a bar chart
     plt.figure()
     win_percentage.plot(kind="bar")
@@ -466,8 +474,7 @@ def plot_data(agent):
     plt.show()
 
     # --------------------------------------------------------------------
-    # 4) Compute and plot average total score (by player)
-    # Here "total score" is assumed to be your "current_score" column on each row
+    # Compute and plot average total score (by player)
 
     avg_score = df.groupby("player")["current_score"].mean()
 
@@ -480,7 +487,7 @@ def plot_data(agent):
     plt.show()
 
     # --------------------------------------------------------------------
-    # 6) Compute and plot each player's average placement
+    # Compute and plot each player's average placement
 
     avg_placement = df.groupby("player")["placement"].mean()
 
