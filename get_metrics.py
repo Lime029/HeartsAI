@@ -496,8 +496,7 @@ def plot_data(agent):
 
     # --------------------------------------------------------------------
     # Compute and plot each player's average placement
-    # TODO: Remove 4 later
-    avg_placement = 4 - df.groupby("player")["placement"].mean()
+    avg_placement = df.groupby("player")["placement"].mean()
 
     plt.figure()
     avg_placement.plot(kind="bar")
