@@ -3,11 +3,12 @@ import random
 from Game import Game
 from Card import Card
 
+
 class State:
     """A class representing the game state, for MCTS. Normally, this would be an abstract class, but we only have one game."""
 
     def __init__(self, game: Game):
-        self.game = deepcopy(game) #maybe don't need to copy
+        self.game = deepcopy(game)  # maybe don't need to copy
         self.game.verbose = False
         self.n_players = 4  # assuming 4 players for now
         self.to_move = game.current_player.index
@@ -46,9 +47,11 @@ class State:
         p = self.game.players[self.to_move]
         if len(self.game.trick) == 0:
             if Card("Clubs", "2") in p.hand:
-                return [p.hand[p.hand.index(Card('Clubs', '2'))]]
+                return [p.hand[p.hand.index(Card("Clubs", "2"))]]
             # p is leading; can play anything except possibly hearts
-            elif self.game.hearts_broken or not p.has_any("Clubs", "Diamonds", "Spades"):
+            elif self.game.hearts_broken or not p.has_any(
+                "Clubs", "Diamonds", "Spades"
+            ):
                 return p.hand  # can play anything
             else:
                 # TODO: replace with a method call in Player.py
@@ -63,5 +66,12 @@ class State:
 
     def get_score(self, player):
         """@return the score from the perspective of the player, normalized between 0 and 1, where 1 is the best, or 0 if the game is not over"""
-        #print(f"game score for player is {self.game.round_score[player]}")
-        return 1 - self.game.players[player].round_score / 26.0
+        # print(f"game score for player is {self.game.players[player].score}")
+        #return 1 - self.game.players[player].score / 100.0
+        #print(f"scores: {[p.score for p in self.game.players]}")
+        smin = min([p.score for p in self.game.players])
+        smax = max([p.score for p in self.game.players])
+        if smin == smax:
+            return 0.5
+        s = self.game.players[player].score
+        return 1 - (s - smin)/(smax - smin)
