@@ -23,7 +23,7 @@ class ISMCTS:
             tried = [c.move for c in self.children]
             return [m for m in legal_moves if m not in tried]
 
-        def select_child(self, legal_moves, gamma=0.8):
+        def select_child(self, legal_moves, gamma=0.7):
             """selects a child according to the UCB"""
             legal = [c for c in self.children if c.move in legal_moves]
             best = max(
