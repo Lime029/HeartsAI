@@ -10,6 +10,8 @@ from State import State
 from DQ_Agent import *
 from get_metrics import DQN_Player
 
+debug = True
+
 print("Creating Flask app...")
 app = Flask(__name__)
 
@@ -29,8 +31,14 @@ def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.tr
     player_scores = [{"name": player.name, "score": player.score} for player in game.players]
 
     is_main_player = game.current_player == game.main_player
+
+    if debug:
+        display = Game.dict_repr(game.current_player.hand)
+    else:
+        display = Game.dict_repr(game.main_player.hand)
+
     emit('update_cards', {
-        "display_cards": Game.dict_repr(game.main_player.hand),
+        "display_cards": display,
         "player_cards": Game.dict_repr(game.current_player.hand),
         "center_cards": trick_cards,
         "player_name": game.current_player.name,
