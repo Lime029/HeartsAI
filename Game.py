@@ -11,6 +11,8 @@ class Game:
         self.jack_diamonds = jack_diamonds
         self.round = 0
         self.new_round()
+        self.main_player = self.players[0]
+        self.banner = "Welcome to Hearts AI"
 
     def deal_cards(self):
         """Deal 13 cards to each player."""
@@ -128,6 +130,7 @@ class Game:
         self.current_player = winner
 
         if self.verbose:
+            self.banner = f"{winner.name} won the trick!"
             print(f"Trick winner: {winner.name}\t Points: {points}")
             print("Current scores", [player.round_score for player in self.players])
         if len(self.current_player.hand) == 0:

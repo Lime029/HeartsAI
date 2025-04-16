@@ -4,12 +4,17 @@ from State import State
 
 
 class ISMCTS:
+    """
+    implementation of information set MCTS
+    based on https://ieeexplore.ieee.org/document/6203567 and https://www.aifactory.co.uk/newsletter/2013_01_reduce_burden.htm
+    """
+
     class Node:
         def __init__(self, move=None, parent=None, just_moved=None):
             self.move = move  # the move that was just made
             self.parent = parent
             self.children = []
-            self.wins = 0
+            self.wins = 0.0
             self.visits = 0
             self.avails = 1
             self.just_moved = just_moved
@@ -45,30 +50,22 @@ class ISMCTS:
                 score = terminal_state.get_score(self.just_moved)
                 self.wins += score
 
-        # TODO: remove the below
-
         def __repr__(self):
-            return "[M:%s W/V/A: %4i/%4i/%4i]" % (
-                self.move,
-                self.wins,
-                self.visits,
-                self.avails,
-            )
+            return f"{self.move}: {self.wins:.4}W, {self.visits}V, {self.avails}A"
 
-        def TreeToString(self, indent):
-            """Represent the tree as a string, for debugging purposes."""
-            s = self.IndentString(indent) + str(self)
+        def tree_to_str(self, indent=0):
+            s = self.indent_str(indent) + str(self)
             for c in self.children:
-                s += c.TreeToString(indent + 1)
+                s += c.tree_to_str(indent + 1)
             return s
 
-        def IndentString(self, indent):
+        def indent_str(self, indent):
             s = "\n"
             for _ in range(1, indent + 1):
                 s += "| "
             return s
 
-        def ChildrenToString(self):
+        def children_to_str(self):
             s = ""
             for c in self.children:
                 s += str(c) + "\n"
@@ -80,14 +77,14 @@ class ISMCTS:
     def run(self, root_state: State, iters, verbose=False):
         root = ISMCTS.Node()
         for _ in range(iters):
-            #print(f"starting iteration {i}")
+            # print(f"starting iteration {i}")
             n = root
             s = root_state.randomize_clone(self.player_idx)
 
-            #print("Randomized hands:")
-            #for p in s.game.players:
+            # print("Randomized hands:")
+            # for p in s.game.players:
             #    print(f"{p.name} {p.hand}")
-            #print("")
+            # print("")
 
             while True:
                 # traverse the tree until we find a node that is not fully expanded
@@ -109,8 +106,8 @@ class ISMCTS:
 
             # simulate playing out the rest of the hand randomly from this point:
             while s.get_moves() != []:
-                #print(f"moves: {s.get_moves()}")
-                #print(f"current player: {s.game.current_player.name}")
+                # print(f"moves: {s.get_moves()}")
+                # print(f"current player: {s.game.current_player.name}")
                 s.move(random.choice(s.get_moves()))
 
             while n is not None:
