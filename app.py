@@ -2,12 +2,13 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
 
 from threading import Timer
-
 from Player import Player
 from Game import Game
 from Card import Card
 from ISMCTS import ISMCTS
-from State import State
+from State import State 
+from DQ_Agent import *
+from get_metrics import DQN_Player
 
 print("Creating Flask app...")
 app = Flask(__name__)
@@ -91,9 +92,8 @@ def run_mcts():
 def run_dq():
     global game
     print("Running DQ...")
-    mcts = ISMCTS(game.current_player.index)
-    s = State(game)
-    move = mcts.run(s, 1000, verbose=False)
+    dqn = DQN_Player(game)
+    move = dqn.run()
     print(f"DQ chose move: {move}")
     play_card(Game.dict_repr(move))
 

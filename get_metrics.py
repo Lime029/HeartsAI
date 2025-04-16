@@ -92,7 +92,8 @@ class DQN_Player():
         # Determined by 1 - epsilon greedy exploration
         r = bernoulli.rvs(1 - self.epsilon)
         if r == 1:
-            card = Card(suit=best_card[1], rank=best_card[0])
+            #card = Card(suit=best_card[1], rank=best_card[0]) 
+            card = self.__game.deck.get_card(rank = best_card[0], suit = best_card[1])
         elif r == 0 or not self.__game.is_valid_card(card):
             # Random action
             card = self.__game.random_legal_move()
