@@ -13,7 +13,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-import argparse
+import argparse, copy
 
 class Random_Player():
     def __init__(self, game: Game, player_idx=0, iters=50, verbose=False):
@@ -154,7 +154,7 @@ def ISMCTS_vs_RandomAgent(num_games=10, iters=100, max_score=50):
             
             if(round_scores is not None):    # A new trick just started
                 player_round_score = round_scores[0]
-                unsorted_scores = round_scores
+                unsorted_scores = copy.deepcopy(round_scores)
                 round_scores = sorted(round_scores, reverse=True)
                 # If the player won this round, increment the number of rounds wons
                 if round_scores[-1] == player_round_score:
@@ -233,7 +233,7 @@ def DQN_vs_RandomAgent(num_games=10, max_score=50):
 
             if(round_scores is not None):    #
                 player_round_score = round_scores[0]
-                unsorted_scores = round_scores
+                unsorted_scores = copy.deepcopy(round_scores)
                 round_scores = sorted(round_scores, reverse=True)
                 # If the player won this round, increment the number of rounds wons
                 if round_scores[-1] == player_round_score:
@@ -314,7 +314,7 @@ def DQN_vs_ISMCTS(num_games=10, iters=100, max_score=50):
             if(round_scores is not None):    # A new trick just started
                 ismcts_round_score = round_scores[0]
                 dqn_round_score = round_scores[1]
-                unsorted_scores = round_scores
+                unsorted_scores = copy.deepcopy(round_scores)
 
                 # Round scores ordered from largest to smallest
                 round_scores = sorted(round_scores, reverse=True)
@@ -388,7 +388,7 @@ def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
             round_scores = game.play_card(move)
             
             if(round_scores is not None):    # A new trick just started
-                unsorted_scores = round_scores
+                unsorted_scores = copy.deepcopy(round_scores)
                 round_scores = sorted(round_scores, reverse=True)
 
                 # If the player won this round, increment the number of rounds wons
@@ -438,7 +438,7 @@ def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
 def plot_data(agent):
     # 1) Read the CSV into a DataFrame
     if agent == 'ismcts':
-        df = pd.read_csv("ISMCTS_vs_Random.csv")
+        df = pd.read_csv("Final_Results/ISMCTS_Relative_Scoring_vs_Random.csv")
     elif agent == 'dqn':
         df = pd.read_csv("DQN_vs_Random.csv")
     elif agent == 'both':
@@ -453,7 +453,7 @@ def plot_data(agent):
     df_avg = df.groupby(["player", "round"])["current_score"].mean().reset_index()
     for player, group_data in df_avg.groupby("player"):
         plt.plot(group_data["round"], group_data["current_score"], marker='o', label=player)
-
+    
     plt.xlabel("Round")
     plt.ylabel("Current Score")
     plt.title("Current Score vs. Round (by Player)")
