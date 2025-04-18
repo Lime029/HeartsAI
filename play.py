@@ -6,6 +6,7 @@ num_hands = 10
 mcts_scores = []
 random_scores = [[] for _ in range(3)]
 mcts_idx = 0
+mcts_runs = 0
 
 for i in range(num_hands):
     print(f"---------------------------------------Running hand {i}/{num_hands}...--------------------------------------")
@@ -13,12 +14,15 @@ for i in range(num_hands):
     # Create a new game for each hand
     game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
     mcts = ISMCTS(mcts_idx)
+    curr_round = game.round
 
-    while not game.is_game_over() and game.current_player.hand != []:
+    while not game.is_game_over() and game.current_player.hand != [] and game.round == curr_round:
         p = game.current_player
         if p.index == mcts_idx:
             s = State(game)
+            #print(f"running mcts. hand size = {len(game.current_player.hand)}. player = {game.current_player.name}")
             move = mcts.run(s, 100, verbose=False)
+            mcts_runs += 1
         else:
             move = game.random_legal_move()
         game.play_card(move)
@@ -26,9 +30,10 @@ for i in range(num_hands):
     # Store scores at the end of the hand
     for p in game.players:
         if p.index == mcts_idx:
-            mcts_scores.append(p.round_score)
+            mcts_scores.append(p.score)
         else:
-            random_scores[p.index if p.index < mcts_idx else p.index - 1].append(p.round_score)
+            random_scores[p.index if p.index < mcts_idx else p.index - 1].append(p.score)
+print(f"runs = {mcts_runs}")
 
 # Compute average scores
 print("\nSimulation Results:")
