@@ -105,6 +105,62 @@ def run_dq():
     print(f"DQ chose move: {move}")
     play_card(Game.dict_repr(move))
 
+
+@socketio.on('run_pass')
+def run_pass(data):
+    global game
+    print("Passing cards between players...")
+
+    # Extract data from the emitted payload
+    passed_cards_by_player = data['cards']  # Cards being passed
+    from_player_name = game.current_player.name  # Name of the player who is passing cards
+    print(f"From player: {from_player_name}")
+    to_player_name = data['to_player']  # Name of the player who is receiving cards
+
+    # Convert passed card data to actual Card objects
+    converted = {}
+
+    # Find the from_player and to_player based on their names
+    from_player = game.get_player_by_name(from_player_name)
+    to_player = game.get_player_by_name(to_player_name)
+    print(passed_cards_by_player)
+
+    unicode_to_suit = {
+    '♥': 'Hearts',
+    '♣': 'Clubs',
+    '♦': 'Diamonds',
+    '♠': 'Spades'
+    }
+    
+    cards_to_pass = []
+    for card in passed_cards_by_player:
+        rank, unicode_suit = card  # Unpack the inner list
+        suit = unicode_to_suit[unicode_suit]  # Convert to full name
+        card_obj = game.deck.get_card(rank, suit)
+        print(f"Converted card object: {card_obj}")
+        cards_to_pass.append(card_obj)
+
+    # Now pass the cards from the `from_player` to the `to_player`
+    if from_player and to_player:
+        print(f"Cards to pass: {cards_to_pass}")
+        # Remove the cards from the `from_player` hand
+        for card in cards_to_pass:
+            if card in from_player.hand:
+                from_player.hand.remove(card)
+        
+        # Add the cards to the `to_player` hand
+        to_player.hand.extend(cards_to_pass)
+        print(f"Cards passed from {from_player.name} to {to_player.name}")
+    
+    else:
+        print("Error: One or both players not found.")
+
+    # Emit the updated game state
+    emit_game_state()
+
+
+
+
 if __name__ == '__main__':
     print("Starting Flask-SocketIO server...")
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
