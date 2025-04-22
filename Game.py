@@ -82,7 +82,7 @@ class Game:
         self.pass_cards(self.players[3], self.get_random_cards(self.players[3]))
         self.trick = [] # Caution: A list of pairs (playerIndex, card)
         self.hearts_broken = False
-        self.current_player = self.find_starting_player()
+        self.current_player = self.players[0]
 
     def resolve_round(self):
         # Set proper scores

@@ -119,6 +119,8 @@ def pass_cards(cards_to_pass):
 
     game.pass_cards(game.current_player, converted_cards)
     print(f"Cards passed: {cards_to_pass}")
+    game.current_player = game.find_starting_player()
+    print(f"Next player: {game.current_player.name}")
 
 
 
