@@ -105,6 +105,23 @@ def run_dq():
     print(f"DQ chose move: {move}")
     play_card(Game.dict_repr(move))
 
+@socketio.on('pass_cards')
+def pass_cards(cards_to_pass):
+    global game
+    print("passing cards...")
+    print(f"Cards to pass: {cards_to_pass}")
+    converted_cards = []
+    for card_dict in cards_to_pass: 
+        rank = card_dict['rank']
+        suit = card_dict['suit']
+        print(f"Converting card: {rank} of {suit}")
+        converted_cards.append(Card(suit, rank))
+
+    game.pass_cards(game.current_player, converted_cards)
+    print(f"Cards passed: {cards_to_pass}")
+
+
+
 if __name__ == '__main__':
     print("Starting Flask-SocketIO server...")
     socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

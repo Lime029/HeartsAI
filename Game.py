@@ -28,6 +28,47 @@ class Game:
                     return player
         raise ValueError("Nobody has the 2 of clubs.")
     
+    def pass_cards(self, player, cards):
+        """Passes 3 cards from the given player to the next player in line."""
+        if len(cards) != 3:
+            raise ValueError("Must pass exactly 3 cards.")
+        if any(card not in player.hand for card in cards):
+            raise ValueError("All passed cards must be in the player's hand.")
+    
+        # determine the next player in the list
+        if (self.round % 4) == 0:
+            print("Passing left")
+            receiving_index = (player.index - 1) % len(self.players) # left
+        elif (self.round % 4)  == 1:
+            receiving_index = (player.index + 1) % len(self.players) # right
+        elif (self.round % 4)  == 2:
+            receiving_index = (player.index + 2) % len(self.players) # across
+        else:
+            receiving_index = player.index # no pass
+        receiving_player = self.players[receiving_index]
+
+        for card in cards:
+            player.hand.remove(card)
+    
+        receiving_player.hand.extend(cards)
+        receiving_player.hand = sorted(
+            receiving_player.hand,
+            key=lambda c: (Card.suits.index(c.suit), Card.ranks.index(c.rank))
+        )
+
+        if self.verbose:
+            print(f"{player.name} passed 3 cards to {receiving_player.name}.")
+
+
+
+
+    def get_random_cards(self, player):
+        """Get 3 random cards from the player's hand."""
+        if len(player.hand) < 3:
+            raise ValueError("Not enough cards to pass.")
+        return random.sample(player.hand, 3)
+
+    
     def new_round(self):
         """Deals out a new hand and starts play again."""
         for p in self.players:
@@ -36,6 +77,9 @@ class Game:
         
         self.deck = Deck()
         self.deal_cards()
+        self.pass_cards(self.players[1], self.get_random_cards(self.players[1]))
+        self.pass_cards(self.players[2], self.get_random_cards(self.players[2]))
+        self.pass_cards(self.players[3], self.get_random_cards(self.players[3]))
         self.trick = [] # Caution: A list of pairs (playerIndex, card)
         self.hearts_broken = False
         self.current_player = self.find_starting_player()
@@ -73,7 +117,7 @@ class Game:
     def play_card(self, card):
         """Current player attempts to play a card."""
         if not self.is_valid_card(card):
-            raise ValueError("Invalid card played.")
+            raise ValueError("Invalid card played:" + str(card))
 
         self.current_player.hand.remove(card)
         self.trick.append((self.current_player.index, card))

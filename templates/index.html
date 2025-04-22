@@ -163,6 +163,29 @@
             transform: scale(1.05);
         }
 
+        #pass-btn:hover { 
+            background-color: #0056b3; 
+            transform: scale(1.05);
+        }
+
+        #pass
+        {
+            padding: 10px;
+            font-size: 16px;
+            margin: 20px;
+            cursor: pointer;
+            border: black solid 2px;
+            border-radius: 5px;
+            background-color: rgb(222, 51, 125);
+            color: white;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        #pass:hover { 
+            background-color: #e69395; 
+            transform: scale(1.05);
+        }
+
         #player-info {
             position: fixed;
             top: 20px;
@@ -173,6 +196,23 @@
             box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
             color: black;
         }
+
+        #pass-prompt {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff3cd;
+            color: #000;
+            padding: 20px;
+            border: 2px solid #000;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            font-size: 18px;
+            box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.3);
+        }
+
 
         #player-name {
             font-size: 30px;
@@ -213,6 +253,21 @@
 
 
     <script>
+        pause = false;
+        cardsToPass = [];
+        displayPassingPrompt()
+
+        function displayPassingPrompt() {
+            pause = true;
+            const promptDiv = document.createElement('div');
+            promptDiv.id = 'pass-prompt';
+            promptDiv.textContent = 'Select 3 cards to pass to another player.';
+            document.body.appendChild(promptDiv)
+            console.log("Prompt div created");
+
+            
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
         var socket = io();
 
@@ -250,7 +305,6 @@
             // playerTagElement.textContent = "Score: " + data.player_score;
 
             let tag = "";
-
             if (data.dq_players.includes(data.player_name)) {
                 tag = "DQ";
             } else if (data.mcts_players.includes(data.player_name)) {
@@ -286,27 +340,46 @@
 
                 if (isPlayerCard) {
                     cardElement.style.cursor = "pointer";
-                    cardElement.onclick = function () { socket.emit('play_card', card); };
-                    cardElement.onclick = function () { socket.emit('play_card', card); };
+                    cardElement.onclick = function () {
+                        if (!pause)
+                        {
+                            socket.emit('play_card', card);
+                        } else {
+                            cardsToPass.push(card);
+                            console.log(cardsToPass);
+                            cardElement.classList.add('dimmed');
+                            if (cardsToPass.length == 3)
+                            {
+                                console.log("Cards to pass: ", cardsToPass);
+                                socket.emit('pass_cards', cardsToPass);
+                                cardsToPass = [];
+                                document.getElementById('pass-prompt').remove();
+                                pause = false
+                            }
+                        }
+                        
+                    };
                 }
-
                 return cardElement;
             }
-
             data.display_cards.forEach(card => playerDiv.appendChild(createCardElement(card, true)));
             data.center_cards.forEach(card => centerDiv.appendChild(createCardElement(card, false)));
-
             if (!data.is_main_player && data.mcts_players.includes(data.player_name)) {
-            const delay = 800 + Math.random() * 600;
-            setTimeout(() => {
-                document.getElementById('mcts-btn').click();
+                const delay = 800 + Math.random() * 600;
+                setTimeout(() => {
+                console.log("pause value", pause)
+                if (!pause) {
+                    document.getElementById('mcts-btn').click();
+                }
             }, delay);
         }
 
         if (!data.is_main_player && data.dq_players.includes(data.player_name)) {
             const delay = 800 + Math.random() * 600;
             setTimeout(() => {
-                document.getElementById('dq-btn').click();
+                if (!pause) {
+                    document.getElementById('dq-btn').click();
+                }
             }, delay);
         }
 
