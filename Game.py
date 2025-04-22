@@ -38,6 +38,8 @@ class Game:
         self.deal_cards()
         self.trick = [] # Caution: A list of pairs (playerIndex, card)
         self.hearts_broken = False
+        self.passed_cards = not self.should_pass() # = true if cards have already been passed (or they don't need to be)
+        self.cards_to_pass = [[] for _ in self.players] #l[i] = list of cards that player i will pass
         self.current_player = self.find_starting_player()
 
     def resolve_round(self):
@@ -74,6 +76,8 @@ class Game:
         """Current player attempts to play a card."""
         if not self.is_valid_card(card):
             raise ValueError("Invalid card played.")
+        if not self.passed_cards:
+            print("Warning: playing card before cards have been passed.")
 
         self.current_player.hand.remove(card)
         self.trick.append((self.current_player.index, card))
@@ -157,6 +161,60 @@ class Game:
             lead = self.trick[0][1].suit
             move = random.choice(p.playable_cards(lead))
         return move
+
+    def should_pass(self):
+        #returns true if we need to pass cards this round
+        return self.round % 4 != 3
+
+    def pass_player_cards(self, idx, cards):
+        if self.cards_to_pass[idx] != []:
+            raise ValueError(f"Player {idx} has already passed cards")
+        if len(cards) != 3:
+            raise ValueError(f"Received only {len(cards)} cards to pass")
+        if self.round % 4 == 3:
+            raise ValueError("Attempted to pass cards on a round where no cards are passed")
+        self.cards_to_pass[idx] = cards
+        if all(self.cards_to_pass[p.index] != [] for p in self.players):
+            self.do_pass_cards()
+
+    def pass_recipient(self, idx):
+        if self.round % 4 == 0:
+            recipient = (idx - 1) % 4
+        elif self.round % 4 == 1:
+            recipient = (idx + 2) % 4
+        elif self.round % 4 == 2:
+            recipient = (idx + 1) % 4
+        else:
+            recipient = idx
+        return recipient
+
+    def do_pass_cards(self):
+        #once each player has submitted their cards to pass, we actually do the passing
+        for p in self.players:
+            idx = p.index
+            recipient = self.pass_recipient(idx)
+            if recipient == idx:
+                raise ValueError("Attempted to pass cards on round where cards are not passed")
+            self.pass_from_to(idx, recipient, self.cards_to_pass[idx])
+        for p in self.players:
+            p.hand = sorted(p.hand, key=lambda card: (Card.suits.index(card.suit), Card.ranks.index(card.rank)))
+        self.passed_cards = True
+        self.current_player = self.find_starting_player()
+
+    def pass_from_to(self, src, dst, cards):
+        sender = self.players[src]
+        receiver = self.players[dst]
+        for c in cards:
+            if c not in sender.hand:
+                raise ValueError("Attempted to pass a card not in hand (in pass_from_to)")
+            sender.hand.remove(c)
+        receiver.hand.extend(cards)
+        if self.verbose:
+            print(f"{sender.name} gave {cards} to {receiver.name}")
+
+    def get_random_pass_cards(self, idx):
+        #gets a list of 3 randomly chosen cards from player idx's hand
+        return random.sample(self.players[idx].hand, 3)
 
     # Returns a dictionary representation of cards either of a single card or a list
     @staticmethod

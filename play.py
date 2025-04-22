@@ -1,12 +1,15 @@
 from Game import Game
 from State import State
 from ISMCTS import ISMCTS
+import random
 
 num_hands = 10
 mcts_scores = []
 random_scores = [[] for _ in range(3)]
 mcts_idx = 0
 mcts_runs = 0
+
+random.seed(1)
 
 for i in range(num_hands):
     print(f"---------------------------------------Running hand {i}/{num_hands}...--------------------------------------")
@@ -18,6 +21,9 @@ for i in range(num_hands):
 
     while not game.is_game_over() and game.current_player.hand != [] and game.round == curr_round:
         p = game.current_player
+        if not game.passed_cards:
+            for pi in game.players:
+                game.pass_player_cards(pi.index, game.get_random_pass_cards(pi.index))
         if p.index == mcts_idx:
             s = State(game)
             #print(f"running mcts. hand size = {len(game.current_player.hand)}. player = {game.current_player.name}")

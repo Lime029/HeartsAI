@@ -39,6 +39,7 @@ class State:
         return cl
 
     def move(self, move):
+        self.game.passed_cards = True #if we resolved the trick before, this may have been set to false by mistake (hacky fix though)
         self.game.play_card(move)
         self.to_move = self.game.current_player.index
 
