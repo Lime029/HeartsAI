@@ -108,7 +108,7 @@ def get_new_cards():
     """Generates a new game."""
     global game
     print("Received request to start new game.")
-    game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
+    game = Game(["Player 1", "Player 2", "Player 3", "Player 4"], 100)
     emit_game_state()
 
 @socketio.on('run_mcts')
