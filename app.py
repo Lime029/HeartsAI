@@ -21,9 +21,9 @@ print("Initializing SocketIO...")
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 print("Creating initial game state...")
-game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
-mcts_players = ["Meal","Shraf"]
-dq_players = ["Simi"]
+game = Game(["Player 1", "Player 2", "Player 3", "Player 4"], 100)
+mcts_players = ["Player 2","Player 3"]
+dq_players = ["Player 4"]
 
 def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]):
     """Emit the current game state to all clients."""

@@ -445,19 +445,26 @@
 
                 if(!pause) {
 
-            if (!data.is_main_player && data.mcts_players.includes(data.player_name)) {
-            const delay = 800 + Math.random() * 600;
-            setTimeout(() => {
-                document.getElementById('mcts-btn').click();
-            }, delay);
-        }
+                    if (
+    !data.is_main_player &&
+    data.mcts_players.some(p => p === data.player_name)
+) {
+    const delay = 800 + Math.random() * 600;
+    setTimeout(() => {
+        document.getElementById('mcts-btn').click();
+    }, delay);
+}
 
-        if (!data.is_main_player && data.dq_players.includes(data.player_name)) {
-            const delay = 800 + Math.random() * 600;
-            setTimeout(() => {
-                document.getElementById('dq-btn').click();
-            }, delay);
-        }
+if (
+    !data.is_main_player &&
+    data.dq_players.some(p => p === data.player_name)
+) {
+    const delay = 800 + Math.random() * 600;
+    setTimeout(() => {
+        document.getElementById('dq-btn').click();
+    }, delay);
+}
+
 
                 }
 
