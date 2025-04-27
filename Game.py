@@ -216,6 +216,47 @@ class Game:
         #gets a list of 3 randomly chosen cards from player idx's hand
         return random.sample(self.players[idx].hand, 3)
 
+    def get_heur_pass_cards(self, idx):
+        #gets 3 cards from player idx's hand according to weighting heuristic
+        #this function has a lot of "magic numbers" that could instead be tunable parameters
+        hand = self.players[idx].hand
+        weights = [0 for _ in hand]
+        suit_count = {s: sum(c.suit == s for c in hand) for s in ['Hearts', 'Diamonds', 'Clubs', 'Spades']}
+
+        for i, c in enumerate(hand):
+            if c.suit == 'Spades':
+                if c.rank == 'Q':
+                    weight = 100
+                elif c.rank == 'A':
+                    weight = 80
+                elif c.rank == 'K':
+                    weight = 70
+                elif c.rank == 'J':
+                    weight = 40
+                elif c.rank == '10':
+                    weight = 20
+                else:
+                    weight = 10
+            elif c.suit == 'Hearts':
+                weight = 2 * c.value #probably replace 2 with some tunable param
+            else:
+                #saying that there's no base advantage to throwing away an off-suit. could be different
+                weight = 0
+
+            #give a bonus if we are shorting an off-suit (or nearly so)
+            if c.suit in ['Clubs', 'Diamonds']:
+                if suit_count[c.suit] == 1:
+                    weight += 20
+                elif suit_count[c.suit] == 2:
+                    weight += 10
+
+            weights[i] = weight
+
+        #then take the 3 highest-weight cards
+        sorted_weights = sorted(zip(hand, weights), key = lambda x: x[1])
+        return [c for c, _ in sorted_weights[:3]]
+
+
     # Returns a dictionary representation of cards either of a single card or a list
     @staticmethod
     def dict_repr(obj):

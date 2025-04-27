@@ -118,7 +118,7 @@ class ISMCTS:
                 n = n.parent
 
         if verbose:
-            print(root.TreeToString(0))
+            print(root.tree_to_str(0))
         # else:
         #     print(root.ChildrenToString())
 
