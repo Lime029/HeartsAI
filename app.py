@@ -149,7 +149,7 @@ def run_dq():
     play_card(Game.dict_repr(move))
 
 @socketio.on('run_random')
-def run_dq():
+def run_random():
     global game
     print("Running Random...")
     move = game.random_legal_move()
@@ -184,7 +184,7 @@ def run_pass(data):
 
     for p in game.players:
         if p != game.main_player:
-            game.pass_player_cards(p.index, game.get_random_pass_cards(p.index))
+            game.pass_player_cards(p.index, game.get_heur_pass_cards(p.index))
 
     emit_game_state()
 
