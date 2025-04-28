@@ -442,11 +442,11 @@ def clean_dataframe(df):
 
 def plot_data(agent):
     if agent == 'ismcts':
-        df = pd.read_csv("Final_Results/ISMCTS_Relative_Scoring_vs_Random.csv")
+        df = pd.read_csv("ISMCTS_Relative_Scoring_vs_Random.csv")
     elif agent == 'dqn':
         df = pd.read_csv("DQN_vs_Random.csv")
     elif agent == 'both':
-        df = pd.read_csv("DQN_vs_ISMCTS.csv")
+        df = pd.read_csv("DQN_vs_ISMCTS_Relative_Scoring.csv")
     else:
         df = pd.read_csv("Random_vs_Random.csv")
     clean_dataframe(df)
@@ -497,22 +497,22 @@ def plot_data(agent):
     # --------------------------------------------------------------------
     # Compute and plot each player's average placement
     avg_placement = df.groupby("player")["placement"].mean()
-
     plt.figure()
     avg_placement.plot(kind="bar")
     plt.xlabel("Player")
     plt.ylabel("Average Placement")
     plt.title("Average Placement (by Player)")
     plt.xticks(rotation=0)
+    plt.ylim(1, 4) 
     plt.savefig("Final_Results/Average Placement (by Player).jpeg")
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--algo', choices=['dqn', 'ismcts', 'random', 'both'])
-    parser.add_argument('--max_score', help="Determines the max_score used for a game of Hearts", default=100, type=int)
-    parser.add_argument('--iters', help="Determines the number of iterations used for ISMCTS", default=100, type=int)
-    parser.add_argument('--num_games', help="Determines the number of games with the agent", default=100, type=int)
-    parser.add_argument('--graph', action='store_true',help="Determines the number of games with the agent", default=False)
+    parser.add_argument('-a', '--algo', choices=['dqn', 'ismcts', 'random', 'both'])
+    parser.add_argument('-m', '--max_score', help="Determines the max_score used for a game of Hearts", default=100, type=int)
+    parser.add_argument('-i', '--iters', help="Determines the number of iterations used for ISMCTS", default=100, type=int)
+    parser.add_argument('-n', '--num_games', help="Determines the number of games with the agent", default=100, type=int)
+    parser.add_argument('-g', '--graph', action='store_true',help="Determines the number of games with the agent", default=False)
     args = parser.parse_args()
     
     if args.graph:
