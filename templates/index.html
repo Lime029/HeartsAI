@@ -483,6 +483,7 @@ if (
             let tags = [];
             if (data.mcts_players.includes(player.name)) tags.push("MCTS");
             if (data.dq_players.includes(player.name)) tags.push("DQ");
+            if (data.dq_players.includes(player.name)) tags.push("Random");
 
             let tagText = tags.length > 0 ? ` (${tags.join(", ")})` : "";
 

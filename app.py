@@ -21,9 +21,21 @@ print("Initializing SocketIO...")
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 print("Creating initial game state...")
-game = Game(["Player 1", "Player 2", "Player 3", "Player 4"], 100)
-mcts_players = ["Player 2","Player 3"]
-dq_players = ["Player 4"]
+player_names = ["Player 1", "Player 2", "Player 3", "Player 4"]
+ai_candidates = player_names[1:]  # ["Player 2", "Player 3", "Player 4"]
+
+# Randomly assign AI candidates to MCTS, DQ, random
+mcts_player = random.choice(ai_candidates)
+ai_candidates.remove(mcts_player)
+dq_player = random.choice(ai_candidates)
+ai_candidates.remove(dq_player)
+random_player = ai_candidates[0]
+
+mcts_players = [mcts_player]
+dq_players = [dq_player]
+random_players = [random_player]
+
+game = Game(player_names, 100)
 
 def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]):
     """Emit the current game state to all clients."""
@@ -128,6 +140,14 @@ def run_dq():
     dqn = DQN_Player(game)
     move = dqn.run()
     print(f"DQ chose move: {move}")
+    play_card(Game.dict_repr(move))
+
+@socketio.on('run_random')
+def run_dq():
+    global game
+    print("Running Random...")
+    move = game.random_legal_move()
+    print(f"Random chose move: {move}")
     play_card(Game.dict_repr(move))
 
 @socketio.on('run_pass')

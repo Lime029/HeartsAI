@@ -15,7 +15,7 @@ from Player import Player
 import copy 
 
 
-class State:
+class DQState:
     '''
     A game state at some time point t is defined as a single vector (3*52)
         - hand the agent currently holds before playing the trick
@@ -35,7 +35,7 @@ class Memory:
         - the action the model took at current State. A one hot encoding of the card played
         - the next State after the agent takes the action
     '''
-    def __init__(self, current_state : State, reward : float, action : list, next_state : State):
+    def __init__(self, current_state : DQState, reward : float, action : list, next_state : DQState):
         self.current_state = current_state
         self.reward = reward
         self.action = action
@@ -101,7 +101,7 @@ def generate_training_data(model : DQN, epoch : int) -> list:
                     agent_action = ohe
 
                 
-                    current_state = State(hand=hand, cards_seen=cards_seen, game=copy.deepcopy(game))
+                    current_state = DQState(hand=hand, cards_seen=cards_seen, game=copy.deepcopy(game))
                     inital_score = game.players[0].score
                     
                     # Make the agent's next move
@@ -113,7 +113,7 @@ def generate_training_data(model : DQN, epoch : int) -> list:
                         if hand[i] == 1 and agent_action[i] == 1:
                             hand[i] = 0
                             cards_seen[i] = 1
-                    next_state = State(hand=hand, cards_seen=cards_seen, game=copy.deepcopy(game))
+                    next_state = DQState(hand=hand, cards_seen=cards_seen, game=copy.deepcopy(game))
 
                     # Create a Memory
                     memory = Memory(current_state=current_state, reward=-reward, action=agent_action, next_state=next_state)
