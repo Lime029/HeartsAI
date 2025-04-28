@@ -105,17 +105,20 @@ class ISMCTS:
                 n = n.add_child(m, p)  # create a new child and traverse to it
 
             # simulate playing out the rest of the hand randomly from this point:
-            while s.get_moves() != []:
+            curr_round = s.game.round
+            while s.get_moves() != [] and s.game.round == curr_round:
                 # print(f"moves: {s.get_moves()}")
                 # print(f"current player: {s.game.current_player.name}")
                 s.move(random.choice(s.get_moves()))
+            #print(f"round = {s.game.round}, curr_round = {curr_round}")
+            #print(f"scores = {[p.score for p in s.game.players]}")
 
             while n is not None:
                 n.update(s)
                 n = n.parent
 
         if verbose:
-            print(root.TreeToString(0))
+            print(root.tree_to_str(0))
         # else:
         #     print(root.ChildrenToString())
 

@@ -187,6 +187,28 @@
             opacity: 0.5;
             pointer-events: none;
         }
+
+        #pass-btn:hover { 
+            background-color: #0056b3; 
+            transform: scale(1.05);
+        }
+
+        #pass {
+            padding: 10px;
+            font-size: 16px;
+            margin: 20px;
+            cursor: pointer;
+            border: black solid 2px;
+            border-radius: 5px;
+            background-color: rgb(222, 51, 125);
+            color: white;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        #pass:hover { 
+            background-color: #e69395; 
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -213,6 +235,116 @@
 
 
     <script>
+            var pause = false;
+        
+        function showPassInstruction(target_player) {
+            console.log("showPassInstruction");
+            
+            // Remove existing prompt if present
+            const existingPrompt = document.getElementById('pass-prompt');
+            if (existingPrompt) existingPrompt.remove();
+
+            // Create the main prompt container
+            const promptDiv = document.createElement('div');
+            promptDiv.id = 'pass-prompt';
+            promptDiv.style.position = 'fixed';
+            promptDiv.style.top = '80px';
+            promptDiv.style.left = '50%';
+            promptDiv.style.transform = 'translateX(-50%)';
+            promptDiv.style.background = '#fff3cd';
+            promptDiv.style.color = '#000';
+            promptDiv.style.padding = '20px';
+            promptDiv.style.border = '2px solid #000';
+            promptDiv.style.borderRadius = '10px';
+            promptDiv.style.zIndex = '1000';
+            promptDiv.style.textAlign = 'center';
+            promptDiv.style.fontSize = '18px';
+            promptDiv.style.boxShadow = '3px 3px 10px rgba(0,0,0,0.3)';
+    
+            // Instruction text
+            const instruction = document.createElement('p');
+            instruction.textContent = 'Select the cards you would like to pass to ' + target_player + '.';
+            instruction.style.marginBottom = '10px';
+
+            // Create the "Pass" button
+            const passButton = document.createElement('button');
+            passButton.textContent = 'Pass';
+            passButton.id = 'pass';
+
+            // Append the instruction, dropdown, and button to the prompt container
+            promptDiv.appendChild(instruction);
+            promptDiv.appendChild(passButton); // Ensure the button is appended here
+
+            // Add the promptDiv to the body
+            document.body.appendChild(promptDiv);
+            
+            console.log("Pass button created and added!");
+        }
+
+        function enableCardPassing(socket) {
+              console.log("enabled card passing");
+            
+            if (typeof pauseGame === 'function') pauseGame();
+            
+            const selectedCards = new Set();
+            
+            const cards = document.querySelectorAll('.card');
+            
+            cards.forEach(card => {
+                card.style.cursor = 'pointer';
+                card.addEventListener('click', function () {
+                    const rank = card.querySelector('.rank')?.textContent.trim();
+                    const suit = card.querySelector('.suit')?.textContent.trim();
+                    
+                    if (!rank || !suit) {
+                        console.warn('Card missing rank or suit');
+                        return;
+                    }
+                    
+                    const cardKey = [rank, suit];
+                    
+                    if (selectedCards.has(cardKey)) {
+                        selectedCards.delete(cardKey);
+                        card.style.opacity = '1';
+                    } else if (selectedCards.size < 3) {
+                        card.style.opacity = '0.5';
+                        selectedCards.add(cardKey);
+                    }
+                });
+            });
+
+            const passButton = document.getElementById('pass');
+            if (!passButton) {
+                console.error('Pass button not found!');
+                return;
+            }
+
+            passButton.addEventListener('click', () => {
+                if (selectedCards.size !== 3) {
+                    alert('You must select exactly 3 cards to pass.');
+                    return;
+                }
+
+                const selectedCardArray = Array.from(selectedCards);  // The cards selected for passing
+
+                console.log("Selected cards:", selectedCardArray);
+
+                socket.emit('run_pass', {
+                    cards: selectedCardArray,
+                });
+
+                document.getElementById('pass-prompt')?.remove();
+
+                cards.forEach(card => {
+                    card.style.opacity = '1';
+                    card.style.cursor = 'default';
+                });
+
+                //console.log("Cards passed:", selectedCardArray, "to:", targetPlayer);
+                pause = false;
+            });
+            
+        }
         document.addEventListener('DOMContentLoaded', function () {
         var socket = io();
 
@@ -226,6 +358,14 @@
 
         document.getElementById('dq-btn').addEventListener('click', function() {
           socket.emit('run_dq');
+        });
+
+        socket.on('pass_cards', function (data) {
+            pause = true;
+            console.log(pause)
+            showPassInstruction(data.target_player);
+            console.log(pause)
+            enableCardPassing(socket);
         });
 
         socket.on('update_cards', function (data) {
@@ -286,8 +426,15 @@
 
                 if (isPlayerCard) {
                     cardElement.style.cursor = "pointer";
-                    cardElement.onclick = function () { socket.emit('play_card', card); };
-                    cardElement.onclick = function () { socket.emit('play_card', card); };
+                    //cardElement.onclick = function () { socket.emit('play_card', card); };
+                    cardElement.onclick = function () {
+                        console.log(pause);
+                        if (!pause)
+                        {
+                            socket.emit('play_card', card);
+                        }
+                    };
+                    //cardElement.onclick = function () { socket.emit('play_card', card); };
                 }
 
                 return cardElement;
@@ -296,19 +443,30 @@
             data.display_cards.forEach(card => playerDiv.appendChild(createCardElement(card, true)));
             data.center_cards.forEach(card => centerDiv.appendChild(createCardElement(card, false)));
 
-            if (!data.is_main_player && data.mcts_players.includes(data.player_name)) {
-            const delay = 800 + Math.random() * 600;
-            setTimeout(() => {
-                document.getElementById('mcts-btn').click();
-            }, delay);
-        }
+                if(!pause) {
 
-        if (!data.is_main_player && data.dq_players.includes(data.player_name)) {
-            const delay = 800 + Math.random() * 600;
-            setTimeout(() => {
-                document.getElementById('dq-btn').click();
-            }, delay);
-        }
+                    if (
+    !data.is_main_player &&
+    data.mcts_players.some(p => p === data.player_name)
+) {
+    const delay = 800 + Math.random() * 600;
+    setTimeout(() => {
+        document.getElementById('mcts-btn').click();
+    }, delay);
+}
+
+if (
+    !data.is_main_player &&
+    data.dq_players.some(p => p === data.player_name)
+) {
+    const delay = 800 + Math.random() * 600;
+    setTimeout(() => {
+        document.getElementById('dq-btn').click();
+    }, delay);
+}
+
+
+                }
 
         gameBanner.textContent = data.banner || ''; 
                 if (data.banner) {
