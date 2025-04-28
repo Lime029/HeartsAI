@@ -10,21 +10,23 @@ import torch as T
 from Map import Map
 
 import pandas as pd
-import random
+import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-import argparse 
+import argparse, copy 
 import pickle
 
 class Random_Player():
-    def __init__(self, game: Game):
+    def __init__(self, game: Game, player_idx=0, iters=50, verbose=False):
         self.__game = game
 
     def run(self):
         return self.__game.random_legal_move()
     
+    def new_game(self, game):
+        self.__game = game
 class ISMCTS_Player():
-    def __init__(self, player_idx, game: Game, iters, verbose=False):
+    def __init__(self, game: Game, player_idx=0, iters=50, verbose=False):
         self.__game = game
         self.__game_verbosity = game.verbose
         self.__ismcts = ISMCTS(player_idx)
@@ -34,16 +36,19 @@ class ISMCTS_Player():
     def run(self):
         # Temporarily turn off game verbosity as MCTS runs
         self.__game.verbosity = False
-        temp = self.__ismcts.run(State(self.__game), self.__iters, verbose=self.__verbose)
+        card = self.__ismcts.run(State(self.__game), self.__iters, verbose=self.__verbose)
         self.__game.verbosity = self.__game_verbosity
-        return temp
+        return card
+    
+    def new_game(self, game):
+        self.__game = game
 
+import pickle
 class DQN_Player():
-    def __init__(self, game: Game):
-        with open('model.pkl', 'rb') as file:
-            # Load the data from the pickle file
-            model = pickle.load(file)
-        self.__model = model
+    def __init__(self, game: Game, player_idx=0, iters=50, verbose=False):
+        with open('model', 'rb') as file:
+            self.__model = pickle.load(file)
+
         self.__cards_seen = np.zeros(shape=(52))
         self.__current_trick_cards = []
         self.__game = game
@@ -57,10 +62,14 @@ class DQN_Player():
             index = self.__map.get_index(rank=card.rank, suit=card.suit)
             self.__hand[index] = 1  
 
-    def reset_vars(self):
+    def new_game(self, game):
+        self.__game = game
         self.__hand = []
-        self.__map = Map()
         self.__cards_seen = np.zeros(shape=(52))
+        self.__current_trick_cards = []
+
+    def update(self, card: Card):
+        self.__cards_seen[self.__map.get_index(card.rank, card.suit)] = 1
 
     def run(self):
         # Note the agent's hand before playing the card
@@ -84,7 +93,8 @@ class DQN_Player():
         # Determined by 1 - epsilon greedy exploration
         r = bernoulli.rvs(1 - self.epsilon)
         if r == 1:
-            card = Card(suit=best_card[1], rank=best_card[0])
+            #card = Card(suit=best_card[1], rank=best_card[0]) 
+            card = self.__game.deck.get_card(rank = best_card[0], suit = best_card[1])
         elif r == 0 or not self.__game.is_valid_card(card):
             # Random action
             card = self.__game.random_legal_move()
@@ -125,8 +135,12 @@ def ISMCTS_vs_RandomAgent(num_games=10, iters=100, max_score=50):
     rows = []
     ismcts_wins = 0
     ismcts_rwins = 0
-    random_wins = 0
-    random_rwins = 0
+    random2_wins = 0
+    random2_rwins = 0
+    random3_wins = 0
+    random3_rwins = 0
+    random4_wins = 0
+    random4_rwins = 0
     # Run 1000 games
     for i in tqdm(range(num_games)):
         game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=max_score, verbose=False)
@@ -142,31 +156,51 @@ def ISMCTS_vs_RandomAgent(num_games=10, iters=100, max_score=50):
             
             if(round_scores is not None):    # A new trick just started
                 player_round_score = round_scores[0]
-                random_player_round_score = round_scores[1]
+                unsorted_scores = copy.deepcopy(round_scores)
                 round_scores = sorted(round_scores, reverse=True)
                 # If the player won this round, increment the number of rounds wons
                 if round_scores[-1] == player_round_score:
                     ismcts_rwins = ismcts_rwins + 1
-                if round_scores[-1] == random_player_round_score:
-                    random_rwins = random_rwins + 1
+
+                if round_scores[-1] == random2_rwins:
+                    random2_rwins = random2_rwins + 1
+
+                if round_scores[-1] == random3_rwins:
+                    random3_rwins = random3_rwins + 1
+
+                if round_scores[-1] == random4_rwins:
+                    random4_rwins = random4_rwins + 1
                 rows.append({"player": "ISMCTS", "game": i, "round": game.round, "current_score": game.players[0].score, "round_score": player_round_score, "placement": round_scores.index(player_round_score), "round_wins": ismcts_rwins, "game_wins": ismcts_wins, "last_trick": False})
-                rows.append({"player": "Random", "game": i, "round": game.round, "current_score": game.players[1].score, "round_score": random_player_round_score, "placement": round_scores.index(random_player_round_score), "round_wins": random_rwins, "game_wins": random_wins, "last_trick": False})
+                rows.append({"player": "Random2", "game": i, "round": game.round, "current_score": game.players[1].score, "round_score": unsorted_scores[1], "placement": round_scores.index(unsorted_scores[1]), "round_wins": random2_rwins, "game_wins": random2_wins, "last_trick": False})
+                rows.append({"player": "Random3", "game": i, "round": game.round, "current_score": game.players[2].score, "round_score": unsorted_scores[2], "placement": round_scores.index(unsorted_scores[2]), "round_wins": random3_rwins, "game_wins": random3_wins, "last_trick": False})
+                rows.append({"player": "Random4", "game": i, "round": game.round, "current_score": game.players[3].score, "round_score": unsorted_scores[2], "placement": round_scores.index(unsorted_scores[3]), "round_wins": random4_rwins, "game_wins": random4_wins, "last_trick": False})
+                
                 if last_round == game.round:
                     # Correct last_trick for final game score if round was unfinished
-                    rows[-1]['last_trick'] = True
+                    rows[-4]['last_trick'] = True
+                    rows[-3]['last_trick'] = True
                     rows[-2]['last_trick'] = True
+                    rows[-1]['last_trick'] = True
                     if min([player.score for player in game.players]) == game.players[0].score:
                         ismcts_wins = ismcts_wins + 1
-                        rows[-2]['game_wins'] = ismcts_wins
-                    if min([player.score for player in game.players]) == game.players[1].score:
-                        random_wins = random_wins + 1
-                        rows[-1]['game_wins'] = random_wins
+                        rows[-4]['game_wins'] = ismcts_wins
 
-                
+                    if min([player.score for player in game.players]) == game.players[1].score:
+                        random2_wins = random2_wins + 1
+                        rows[-2]['game_wins'] = random2_wins
+
+                    if min([player.score for player in game.players]) == game.players[2].score:
+                        random3_wins = random3_wins + 1
+                        rows[-1]['game_wins'] = random3_wins
+
+                    if min([player.score for player in game.players]) == game.players[3].score:
+                        random4_wins = random4_wins + 1
+                        rows[-1]['game_wins'] = random4_wins
+
                 last_round = game.round
 
     df = pd.DataFrame(rows)
-    df.to_csv("ISMCTS_vs_Random.csv", index=False)
+    df.to_csv("ISMCTS_Relative_Scoring_vs_Random.csv", index=False)
     return df
 
 def DQN_vs_RandomAgent(num_games=10, max_score=50):
@@ -177,8 +211,13 @@ def DQN_vs_RandomAgent(num_games=10, max_score=50):
     rows = []
     dqn_wins = 0
     dqn_rwins = 0
-    random_wins = 0
-    random_rwins = 0
+    random2_wins = 0
+    random2_rwins = 0
+    random3_wins = 0
+    random3_rwins = 0
+    random4_wins = 0
+    random4_rwins = 0
+
     # Run 1000 games
     for i in tqdm(range(num_games)):
         game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=max_score, verbose=False)
@@ -192,29 +231,52 @@ def DQN_vs_RandomAgent(num_games=10, max_score=50):
             move = players[game.current_player.index].run()
             round_scores = game.play_card(move)
             
-            if(round_scores is not None):    # A new trick just started
+            dqn_player.update(move)
+
+            if(round_scores is not None):    #
                 player_round_score = round_scores[0]
-                random_player_round_score = round_scores[1]
-                round_scores = sorted(round_scores, reverse=True)
+                unsorted_scores = copy.deepcopy(round_scores)
+                round_scores = sorted(round_scores)
                 # If the player won this round, increment the number of rounds wons
                 if round_scores[-1] == player_round_score:
                     dqn_rwins = dqn_rwins + 1
-                if round_scores[-1] == random_player_round_score:
-                    random_rwins = random_rwins + 1
-                rows.append({"player": "DQN", "game": i, "round": game.round, "current_score": game.players[0].score, "round_score": player_round_score, "placement": round_scores.index(player_round_score), "round_wins": dqn_rwins, "game_wins": dqn_wins, "last_trick": False})
-                rows.append({"player": "Random", "game": i, "round": game.round, "current_score": game.players[1].score, "round_score": random_player_round_score, "placement": round_scores.index(random_player_round_score), "round_wins": random_rwins, "game_wins": random_wins, "last_trick": False})
+                    
+                if round_scores[-1] == random2_rwins:
+                    random2_rwins = random2_rwins + 1
+
+                if round_scores[-1] == random3_rwins:
+                    random3_rwins = random3_rwins + 1
+
+                if round_scores[-1] == random4_rwins:
+                    random4_rwins = random4_rwins + 1
+                rows.append({"player": "DQN", "game": i, "round": game.round, "current_score": game.players[0].score, "round_score": player_round_score, "placement": round_scores.index(player_round_score) + 1, "round_wins": dqn_rwins, "game_wins": dqn_wins, "last_trick": False})
+                rows.append({"player": "Random2", "game": i, "round": game.round, "current_score": game.players[1].score, "round_score": unsorted_scores[1], "placement": round_scores.index(unsorted_scores[1]) + 1, "round_wins": random2_rwins, "game_wins": random2_wins, "last_trick": False})
+                rows.append({"player": "Random3", "game": i, "round": game.round, "current_score": game.players[2].score, "round_score": unsorted_scores[2], "placement": round_scores.index(unsorted_scores[2]) + 1, "round_wins": random3_rwins, "game_wins": random3_wins, "last_trick": False})
+                rows.append({"player": "Random4", "game": i, "round": game.round, "current_score": game.players[3].score, "round_score": unsorted_scores[2], "placement": round_scores.index(unsorted_scores[3]) + 1, "round_wins": random4_rwins, "game_wins": random4_wins, "last_trick": False})
+                
                 if last_round == game.round:
                     # Correct last_trick for final game score if round was unfinished
-                    rows[-1]['last_trick'] = True
+                    rows[-4]['last_trick'] = True
+                    rows[-3]['last_trick'] = True
                     rows[-2]['last_trick'] = True
+                    rows[-1]['last_trick'] = True
                     if min([player.score for player in game.players]) == game.players[0].score:
                         dqn_wins = dqn_wins + 1
-                        rows[-2]['game_wins'] = dqn_wins
+                        rows[-4]['game_wins'] = dqn_wins
                     if min([player.score for player in game.players]) == game.players[1].score:
-                        random_wins = random_wins + 1
-                        rows[-1]['game_wins'] = random_wins
+                        random2_wins = random2_wins + 1
+                        rows[-3]['game_wins'] = random2_wins
 
-                
+                    if min([player.score for player in game.players]) == game.players[2].score:
+                        random3_wins = random3_wins + 1
+                        rows[-2]['game_wins'] = random3_wins
+
+                    if min([player.score for player in game.players]) == game.players[3].score:
+                        random4_wins = random4_wins + 1
+                        rows[-1]['game_wins'] = random4_wins
+          
+                dqn_player.__cards_seen = np.zeros(shape=(52))
+                dqn_player.__current_trick_cards = []
                 last_round = game.round
 
     df = pd.DataFrame(rows)
@@ -231,10 +293,10 @@ def DQN_vs_ISMCTS(num_games=10, iters=100, max_score=50):
     ismcts_wins = 0
     ismcts_rwins = 0
 
-    random1_wins = 0
-    random1_rwins = 0
-    random2_wins = 0
-    random2_rwins = 0
+    random3_wins = 0
+    random3_rwins = 0
+    random4_wins = 0
+    random4_rwins = 0
     # Run 1000 games
     for i in tqdm(range(num_games)):
         game = Game(["ISMCTS", "DQN", "R1", "R2"], max_score=max_score, verbose=False)
@@ -250,26 +312,31 @@ def DQN_vs_ISMCTS(num_games=10, iters=100, max_score=50):
             move = players[game.current_player.index].run()
             round_scores = game.play_card(move)
             
+            dqn_player.update(move)
             if(round_scores is not None):    # A new trick just started
                 ismcts_round_score = round_scores[0]
                 dqn_round_score = round_scores[1]
-                R1_player_round_score = round_scores[2]
-                R2_player_round_score = round_scores[3]
+                unsorted_scores = copy.deepcopy(round_scores)
 
                 # Round scores ordered from largest to smallest
-                round_scores = sorted(round_scores, reverse=True)
+                round_scores = sorted(round_scores)
                 # If the player won this round, increment the number of rounds wons
                 # A player won if the had the smallest (last in list) score
+                if round_scores[-1] == ismcts_round_score:
+                    ismcts_rwins = ismcts_rwins + 1
                 if round_scores[-1] == dqn_round_score:
                     dqn_rwins = dqn_rwins + 1
-                if round_scores[-1] == R1_player_round_score:
-                    random1_rwins = random1_rwins + 1
-                if round_scores[-1] == R2_player_round_score:
-                    random2_rwins = random2_rwins + 1
-                rows.append({"player": "ISMCTS", "game": i, "round": game.round, "current_score": game.players[0].score, "round_score": ismcts_round_score, "placement": round_scores.index(ismcts_round_score), "round_wins": ismcts_rwins, "game_wins": ismcts_wins, "last_trick": False})
-                rows.append({"player": "DQN", "game": i, "round": game.round, "current_score": game.players[1].score, "round_score": dqn_round_score, "placement": round_scores.index(dqn_round_score), "round_wins": dqn_rwins, "game_wins": dqn_wins, "last_trick": False})
-                rows.append({"player": "R1", "game": i, "round": game.round, "current_score": game.players[2].score, "round_score": R1_player_round_score, "placement": round_scores.index(R1_player_round_score), "round_wins": random1_rwins, "game_wins": random1_wins, "last_trick": False})
-                rows.append({"player": "R2", "game": i, "round": game.round, "current_score": game.players[3].score, "round_score": R2_player_round_score, "placement": round_scores.index(R2_player_round_score), "round_wins": random2_rwins, "game_wins": random2_wins, "last_trick": False})
+
+                if round_scores[-1] == random3_rwins:
+                    random3_rwins = random3_rwins + 1
+
+                if round_scores[-1] == random4_rwins:
+                    random4_rwins = random4_rwins + 1
+                rows.append({"player": "ISMCTS", "game": i, "round": game.round, "current_score": game.players[0].score, "round_score": ismcts_round_score, "placement": round_scores.index(ismcts_round_score) + 1, "round_wins": ismcts_rwins, "game_wins": ismcts_wins, "last_trick": False})
+                rows.append({"player": "DQN", "game": i, "round": game.round, "current_score": game.players[1].score, "round_score": dqn_round_score, "placement": round_scores.index(dqn_round_score) + 1, "round_wins": dqn_rwins, "game_wins": dqn_wins, "last_trick": False})
+                rows.append({"player": "Random3", "game": i, "round": game.round, "current_score": game.players[2].score, "round_score": unsorted_scores[2], "placement": round_scores.index(unsorted_scores[2]) + 1, "round_wins": random3_rwins, "game_wins": random3_wins, "last_trick": False})
+                rows.append({"player": "Random4", "game": i, "round": game.round, "current_score": game.players[3].score, "round_score": unsorted_scores[2], "placement": round_scores.index(unsorted_scores[3]) + 1, "round_wins": random4_rwins, "game_wins": random4_wins, "last_trick": False})
+                
                 if last_round == game.round:
                     # Correct last_trick for final game score if round was unfinished
                     rows[-1]['last_trick'] = True
@@ -279,27 +346,37 @@ def DQN_vs_ISMCTS(num_games=10, iters=100, max_score=50):
                     if min([player.score for player in game.players]) == game.players[0].score:
                         ismcts_wins = ismcts_wins + 1
                         rows[-4]['game_wins'] = ismcts_wins
+
                     if min([player.score for player in game.players]) == game.players[1].score:
                         dqn_wins = dqn_wins + 1
                         rows[-3]['game_wins'] = dqn_wins
-                    if min([player.score for player in game.players]) == game.players[2].score:
-                        random1_wins = random1_wins + 1
-                        rows[-2]['game_wins'] = random1_wins
-                    if min([player.score for player in game.players]) == game.players[3].score:
-                        random2_wins = random2_wins + 1
-                        rows[-1]['game_wins'] = random2_wins
 
-                
+                    if min([player.score for player in game.players]) == game.players[2].score:
+                        random3_wins = random3_wins + 1
+                        rows[-1]['game_wins'] = random3_wins
+
+                    if min([player.score for player in game.players]) == game.players[3].score:
+                        random4_wins = random4_wins + 1
+                        rows[-1]['game_wins'] = random4_wins
+
+                dqn_player.__cards_seen = np.zeros(shape=(52))
+                dqn_player.__current_trick_cards = []
                 last_round = game.round
 
     df = pd.DataFrame(rows)
-    df.to_csv("DQN_vs_Random.csv", index=False)
+    df.to_csv("DQN_vs_ISMCTS.csv", index=False)
     return df
 
 def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
     rows = []
-    random_wins = 0
-    random_rwins = 0
+    random1_wins = 0
+    random1_rwins = 0
+    random2_wins = 0
+    random2_rwins = 0
+    random3_wins = 0
+    random3_rwins = 0
+    random4_wins = 0
+    random4_rwins = 0
     # Run 1000 games
     for i in tqdm(range(num_games)):
         game = Game(["Rachel", "Meal", "Shraf", "Simi"], max_score=max_score, verbose=False)
@@ -313,39 +390,138 @@ def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
             round_scores = game.play_card(move)
             
             if(round_scores is not None):    # A new trick just started
-                random_player_round_score = round_scores[0]
-                round_scores = sorted(round_scores, reverse=True)
+                unsorted_scores = copy.deepcopy(round_scores)
+                round_scores = sorted(round_scores)
 
                 # If the player won this round, increment the number of rounds wons
-                if round_scores[-1] == random_rwins:
-                    random_rwins = random_rwins + 1
-                rows.append({"player": "Random", "game": i, "round": game.round, "current_score": game.players[0].score, "round_score": random_player_round_score, "placement": round_scores.index(random_player_round_score), "round_wins": random_rwins, "game_wins": random_wins, "last_trick": False})
+                if round_scores[-1] == random1_rwins:
+                    random1_rwins = random1_rwins + 1
+
+                if round_scores[-1] == random2_rwins:
+                    random2_rwins = random2_rwins + 1
+
+                if round_scores[-1] == random3_rwins:
+                    random3_rwins = random3_rwins + 1
+
+                if round_scores[-1] == random4_rwins:
+                    random4_rwins = random4_rwins + 1
+                rows.append({"player": "Random1", "game": i, "round": game.round, "current_score": game.players[0].score, "round_score": unsorted_scores[0], "placement": round_scores.index(unsorted_scores[0]) + 1, "round_wins": random1_rwins, "game_wins": random1_wins, "last_trick": False})
+                rows.append({"player": "Random2", "game": i, "round": game.round, "current_score": game.players[1].score, "round_score": unsorted_scores[1], "placement": round_scores.index(unsorted_scores[1]) + 1, "round_wins": random2_rwins, "game_wins": random2_wins, "last_trick": False})
+                rows.append({"player": "Random3", "game": i, "round": game.round, "current_score": game.players[2].score, "round_score": unsorted_scores[2], "placement": round_scores.index(unsorted_scores[2]) + 1, "round_wins": random3_rwins, "game_wins": random3_wins, "last_trick": False})
+                rows.append({"player": "Random4", "game": i, "round": game.round, "current_score": game.players[3].score, "round_score": unsorted_scores[2], "placement": round_scores.index(unsorted_scores[3]) + 1, "round_wins": random4_rwins, "game_wins": random4_wins, "last_trick": False})
                 if last_round == game.round:
                     # Correct last_trick for final game score if round was unfinished
+                    rows[-4]['last_trick'] = True
+                    rows[-3]['last_trick'] = True
+                    rows[-2]['last_trick'] = True
                     rows[-1]['last_trick'] = True
                     if min([player.score for player in game.players]) == game.players[0].score:
-                        random_wins = random_wins + 1
-                        rows[-1]['game_wins'] = random_wins
-                
+                        random1_wins = random1_wins + 1
+                        rows[-4]['game_wins'] = random1_wins
+
+                    if min([player.score for player in game.players]) == game.players[1].score:
+                        random2_wins = random2_wins + 1
+                        rows[-3]['game_wins'] = random2_wins
+
+                    if min([player.score for player in game.players]) == game.players[2].score:
+                        random3_wins = random3_wins + 1
+                        rows[-2]['game_wins'] = random3_wins
+
+                    if min([player.score for player in game.players]) == game.players[3].score:
+                        random4_wins = random4_wins + 1
+                        rows[-1]['game_wins'] = random4_wins
+
                 last_round = game.round
 
     df = pd.DataFrame(rows)
     df.to_csv("Random_vs_Random.csv", index=False)
     return df
 
+def clean_dataframe(df):
+    df.loc[df['last_trick'] == True, 'round'] += 1
+
+def plot_data(agent):
+    if agent == 'ismcts':
+        df = pd.read_csv("Final_Results/ISMCTS_Relative_Scoring_vs_Random.csv")
+    elif agent == 'dqn':
+        df = pd.read_csv("DQN_vs_Random.csv")
+    elif agent == 'both':
+        df = pd.read_csv("DQN_vs_ISMCTS.csv")
+    else:
+        df = pd.read_csv("Random_vs_Random.csv")
+    clean_dataframe(df)
+
+    # --------------------------------------------------------------------
+    # Plot current score vs. round for each player
+
+    plt.figure()  # separate figure
+    df_avg = df.groupby(["player", "round"])["current_score"].mean().reset_index()
+    for player, group_data in df_avg.groupby("player"):
+        plt.plot(group_data["round"], group_data["current_score"], marker='o', label=player)
+    
+    unique_rounds = sorted(df_avg["round"].unique())
+    plt.xticks(unique_rounds) 
+    plt.xlabel("Hand")
+    plt.ylabel("Average Score")
+    plt.title("Average Current Scores Throughout Game")
+    plt.legend()
+    plt.savefig("Final_Results/Average Score vs. Hand (by Player).jpeg")
+    
+
+    # --------------------------------------------------------------------
+    # 3) Compute and plot win percentage (assuming `round_wins` is 0 or 1 per row)
+
+    # win_percentage = df.groupby("player")["round_wins"].max()
+    # # Plot as a bar chart
+    # plt.figure()
+    # win_percentage.plot(kind="bar")
+    # plt.xlabel("Player")
+    # plt.ylabel("Win Percentage (Round Wins)")
+    # plt.title("Win Percentage of Each Player")
+    # plt.xticks(rotation=0)
+    # plt.show()
+
+    # # --------------------------------------------------------------------
+    # # Compute and plot average total score (by player)
+
+    # avg_score = df.groupby("player")["current_score"].mean()
+
+    # plt.figure()
+    # avg_score.plot(kind="bar")
+    # plt.xlabel("Player")
+    # plt.ylabel("Average Score")
+    # plt.title("Average Total Score (by Player)")
+    # plt.xticks(rotation=0)
+    # plt.show()
+
+    # --------------------------------------------------------------------
+    # Compute and plot each player's average placement
+    avg_placement = df.groupby("player")["placement"].mean()
+
+    plt.figure()
+    avg_placement.plot(kind="bar")
+    plt.xlabel("Player")
+    plt.ylabel("Average Placement")
+    plt.title("Average Placement (by Player)")
+    plt.xticks(rotation=0)
+    plt.savefig("Final_Results/Average Placement (by Player).jpeg")
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-algo', choices=['dqn', 'ismcts', 'random', 'both'], default='dqn')
-    parser.add_argument('-max_score', help="Determines the max_score used for a game of Hearts", default=50)
-    parser.add_argument('-iters', help="Determines the number of iterations used for ISMCTS", default=100)
-    parser.add_argument('-num_games', help="Determines the number of games with the agent", default=100)
+    parser.add_argument('--algo', choices=['dqn', 'ismcts', 'random', 'both'])
+    parser.add_argument('--max_score', help="Determines the max_score used for a game of Hearts", default=100, type=int)
+    parser.add_argument('--iters', help="Determines the number of iterations used for ISMCTS", default=100, type=int)
+    parser.add_argument('--num_games', help="Determines the number of games with the agent", default=100, type=int)
+    parser.add_argument('--graph', action='store_true',help="Determines the number of games with the agent", default=False)
     args = parser.parse_args()
     
-    if args.algo == 'dqn':
+    if args.graph:
+        plot_data(args.algo)
+    elif args.algo == 'dqn':
         DQN_vs_RandomAgent(num_games=args.num_games, max_score=args.max_score)
-    if args.algo == 'ismcts':
+    elif args.algo == 'ismcts':
         ISMCTS_vs_RandomAgent(num_games=args.num_games, iters=args.iters, max_score=args.max_score)
-    if args.algo == 'random':
+    elif args.algo == 'random':
         RandomAgent_vs_RandomAgent(num_games=args.num_games, max_score=args.max_score)
-    if args.algo == 'both':
+    elif args.algo == 'both':
         DQN_vs_ISMCTS(num_games=args.num_games, iters=args.iters, max_score=args.max_score)

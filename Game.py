@@ -45,6 +45,9 @@ class Game:
     def resolve_round(self):
         # Set proper scores
         shot_moon = any(p.shooting_moon for p in self.players)
+        # Save round scores to return for analysis
+        round_scores = [player.round_score for player in self.players]
+        
         for p in self.players:
             p.score += p.round_score
         if shot_moon:
@@ -52,17 +55,19 @@ class Game:
                 print(f"Player {self.current_player.index} shot the moon")
             for p in self.players:
                 # +26 for everyone who didn't shoot, 0 at most for shooter
+                round_scores.append(p.round_score)
                 if p.round_score <= 0:
                     p.score += 26
+                    round_scores[-1] += 26
                 else: # This is the shooter
                     p.score -= 26
+                    round_scores[-1] -= 26
         
         if self.verbose:
             print(f"Round {self.round} ended.")
             for p in self.players:
                 print(f"{p.name} now has {p.score} points.")
         
-        round_scores = [player.round_score for player in self.players]
         if not self.is_game_over():
             if self.verbose:
                 print("Round scores", round_scores)
