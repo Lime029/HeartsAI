@@ -73,7 +73,7 @@ class Game:
     def play_card(self, card):
         """Current player attempts to play a card."""
         if not self.is_valid_card(card):
-            raise ValueError(f"Invalid card played: {card.rank} of {card.suit}")
+            raise ValueError("Invalid card played.")
 
         self.current_player.hand.remove(card)
         self.trick.append((self.current_player.index, card))
@@ -157,13 +157,6 @@ class Game:
             lead = self.trick[0][1].suit
             move = random.choice(p.playable_cards(lead))
         return move
-    
-    def get_player_by_name(self, name):
-        """Return the Player object with the given name."""
-        for player in self.players:
-            if player.name == name:
-                return player
-        raise ValueError(f"No player found with name: {name}")
 
     # Returns a dictionary representation of cards either of a single card or a list
     @staticmethod

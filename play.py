@@ -36,7 +36,7 @@ print(f"MCTS average score: {sum(mcts_scores)/len(mcts_scores):.2f}")
 for i, scores in enumerate(random_scores):
     print(f"Random player {i + 1} average score: {sum(scores)/len(mcts_scores):.2f}")
 
-
+"""
 # Create the game with four players
 game = Game(["Rachel", "Meal", "Shraf", "Simi"], 100)
 
@@ -64,4 +64,4 @@ print("Hand is over. Scores:")
 for p in game.players:
     print(f"{p.name}: {p.round_score}")
 print("")
-
+"""
