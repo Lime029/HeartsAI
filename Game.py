@@ -236,10 +236,6 @@ class Game:
                     weight = 80
                 elif c.rank == 'K':
                     weight = 70
-                elif c.rank == 'J':
-                    weight = 40
-                elif c.rank == '10':
-                    weight = 20
                 else:
                     weight = 10
             elif c.suit == 'Hearts':
