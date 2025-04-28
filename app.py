@@ -63,6 +63,7 @@ def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.tr
             "player_scores": player_scores,
             "mcts_players": mcts_players,
             "dq_players": dq_players,
+            "random_players": random_players,
             "need_to_pass": not game.passed_cards,
             "pass_target": game.players[game.pass_recipient(game.current_player.index)].name
 
@@ -80,6 +81,7 @@ def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.tr
             "player_scores": player_scores,
             "mcts_players": mcts_players,
             "dq_players": dq_players,
+            "random_players": random_players,
             "need_to_pass": not game.passed_cards,
             "pass_target": game.players[game.pass_recipient(game.main_player.index)].name
         }, broadcast=True)

@@ -218,6 +218,8 @@
         <button class="btn" id="new-cards-btn">Restart Game</button>
         <button class="btn" id="mcts-btn">Decide via MCTS</button>
         <button class="btn" id="dq-btn">Decide via DQ</button>
+        <button class="btn" id="random-btn">Pick Random</button>
+
     </div>
 
     <div id="center-cards"></div>
@@ -360,6 +362,10 @@
           socket.emit('run_dq');
         });
 
+        document.getElementById('random-btn').addEventListener('click', function() {
+          socket.emit('run_random');
+        });
+
         socket.on('pass_cards', function (data) {
             pause = true;
             console.log(pause)
@@ -394,6 +400,8 @@
             if (data.dq_players.includes(data.player_name)) {
                 tag = "DQ";
             } else if (data.mcts_players.includes(data.player_name)) {
+                tag = "MCTS";
+            } else if (data.random_players.includes(data.player_name)) {
                 tag = "MCTS";
             } else if (data.player_name === data.player_name) {
                 tag = "Player";
@@ -465,6 +473,16 @@ if (
     }, delay);
 }
 
+if (
+    !data.is_main_player &&
+    data.random_players.some(p => p === data.player_name)
+) {
+    const delay = 800 + Math.random() * 600;
+    setTimeout(() => {
+        document.getElementById('random-btn').click();
+    }, delay);
+}
+
 
                 }
 
@@ -483,7 +501,7 @@ if (
             let tags = [];
             if (data.mcts_players.includes(player.name)) tags.push("MCTS");
             if (data.dq_players.includes(player.name)) tags.push("DQ");
-            if (data.dq_players.includes(player.name)) tags.push("Random");
+            if (data.random_players.includes(player.name)) tags.push("Random");
 
             let tagText = tags.length > 0 ? ` (${tags.join(", ")})` : "";
 
