@@ -20,22 +20,26 @@ app = Flask(__name__)
 print("Initializing SocketIO...")
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+def start_new_game():
+    global player_names, mcts_players, dq_players, random_players, game
+    player_names = ["Player 1", "Player 2", "Player 3", "Player 4"]
+    ai_candidates = player_names[1:]  # ["Player 2", "Player 3", "Player 4"]
+
+    # Randomly assign AI candidates to MCTS, DQ, random
+    mcts_player = random.choice(ai_candidates)
+    ai_candidates.remove(mcts_player)
+    dq_player = random.choice(ai_candidates)
+    ai_candidates.remove(dq_player)
+    random_player = ai_candidates[0]
+
+    mcts_players = [mcts_player]
+    dq_players = [dq_player]
+    random_players = [random_player]
+
+    game = Game(player_names, 100)
+
 print("Creating initial game state...")
-player_names = ["Player 1", "Player 2", "Player 3", "Player 4"]
-ai_candidates = player_names[1:]  # ["Player 2", "Player 3", "Player 4"]
-
-# Randomly assign AI candidates to MCTS, DQ, random
-mcts_player = random.choice(ai_candidates)
-ai_candidates.remove(mcts_player)
-dq_player = random.choice(ai_candidates)
-ai_candidates.remove(dq_player)
-random_player = ai_candidates[0]
-
-mcts_players = [mcts_player]
-dq_players = [dq_player]
-random_players = [random_player]
-
-game = Game(player_names, 100)
+start_new_game()
 
 def emit_game_state(trick_cards = [Game.dict_repr(trick[1]) for trick in game.trick]):
     """Emit the current game state to all clients."""
@@ -122,7 +126,7 @@ def get_new_cards():
     """Generates a new game."""
     global game
     print("Received request to start new game.")
-    game = Game(["Player 1", "Player 2", "Player 3", "Player 4"], 100)
+    start_new_game()
     emit_game_state()
 
 @socketio.on('run_mcts')
