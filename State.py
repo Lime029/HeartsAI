@@ -67,7 +67,7 @@ class State:
     def get_score(self, player):
         """@return the score from the perspective of the player, normalized between 0 and 1, where 1 is the best, or 0 if the game is not over"""
         # print(f"game score for player is {self.game.players[player].score}")
-        #return 1 - self.game.players[player].score / 100.0
+        return 1 - self.game.players[player].score / 100.0
         #print(f"scores: {[p.score for p in self.game.players]}")
         smin = min([p.score for p in self.game.players])
         smax = max([p.score for p in self.game.players])

@@ -200,7 +200,7 @@ def ISMCTS_vs_RandomAgent(num_games=10, iters=100, max_score=50):
                 last_round = game.round
 
     df = pd.DataFrame(rows)
-    df.to_csv("ISMCTS_Relative_Scoring_vs_Random.csv", index=False)
+    df.to_csv("ISMCTS_Normal_Scoring_vs_Random.csv", index=False)
     return df
 
 def DQN_vs_RandomAgent(num_games=10, max_score=50):
@@ -364,7 +364,7 @@ def DQN_vs_ISMCTS(num_games=10, iters=100, max_score=50):
                 last_round = game.round
 
     df = pd.DataFrame(rows)
-    df.to_csv("DQN_vs_ISMCTS.csv", index=False)
+    df.to_csv("DQN_vs_ISMCTS_Normal_Scoring.csv", index=False)
     return df
 
 def RandomAgent_vs_RandomAgent(num_games=10, max_score=50):
