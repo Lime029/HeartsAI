@@ -23,7 +23,6 @@ class State:
         cl = self.clone()
         # need to randomize the other players' hands
         obs_hand = cl.game.players[observer].hand
-        # TODO: replace this with a call to a Game method, which should keep track of cards that have been played in previous tricks
         unseen = [
             c
             for c in cl.game.deck.cards
@@ -55,12 +54,10 @@ class State:
             ):
                 return p.hand  # can play anything
             else:
-                # TODO: replace with a method call in Player.py
                 return [c for c in p.hand if c.suit != "Hearts"]
         else:
             lead = self.game.trick[0][1].suit
             if p.has_any(lead):
-                # TODO: replace with a method call
                 return [c for c in p.hand if c.suit == lead]
             else:
                 return p.hand
